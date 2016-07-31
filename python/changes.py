@@ -23,4 +23,6 @@ hpfid = -1
 for featid in range(l.GetFeatureCount()):
     feature = l.GetFeature(featid);
     fieldid = feature.GetFieldIndex("Name");
-    print(feature.GetFieldAsString(fieldid));
+    name = feature.GetFieldAsString(fieldid);
+    if (name == "Heat Perimeter"):
+        print("success")
