@@ -1,0 +1,124 @@
+* trying to learn GIS
+** platforms
+*** R
+
+[[http://gis.stackexchange.com/questions/45327/tutorials-to-handle-spatial-data-in-r][learning R/gis]]
+
+*** Python
+
+[[http://www.uclmail.net/users/babayoshihiko/fink/qgis/index.html][this page]] (by Baba Yoshihiko!) gives a clue on how to run python/qgis
+under fink.  but, get a missing _SSLv2_client_method when doing
+"import qgis" with *this* PYTHONPATH:
+#+BEGIN_QUOTE
+/Users/minshall/usr/lib/python:/sw/lib/python2.7/site-packages:/Users/minshall/usr/lib/python/anki:/sw/Applications/QGIS-py27-2.14.1.app/Contents/Resources/python:/sw/lib/qt4-x11/lib:/sw/share/qgis214-py27/plugins/
+#+END_QUOTE
+
+this is "normal" PYTHONPATH
+#+BEGIN_QUOTE
+/Users/minshall/usr/lib/python:/sw/lib/python2.7/site-packages:/Users/minshall/usr/lib/python/anki
+#+END_QUOTE
+
+#+BEGIN_EXAMPLE
+PYTHONPATH=/sw/share/qgis214-py27/plugins:/sw/Applications/QGIS-py27-2.14.1.app/Contents/Resources/python:/sw/lib/qt4-mac/lib/python2.7/site-packages
+#+END_EXAMPLE
+
+that also doesn't work.  "sudo fink update pyqt4-mac-py27".
+(_SSLv2_client_method [[http://stackoverflow.com/questions/36637229/why-wont-anaconda-jupyter-ipython-notebook-launch/36749855][appears]] to be old.)
+
+actually, just "import ssl" doesn't work in python2.7.  it *does* work
+in python2.6.  so, "sudo fink update python27 python27-shlibs" also,
+"python".  "import ssl" now works.
+
+but, "import qgis" gives same error.  could it be that when i
+built/installed qgis, it somehow used some old (pre-update) library?
+
+
+so, "fink update-all"
+
+in the meantime...
+#+BEGIN_EXAMPLE
+>>> import osgeo
+>>> wkt1 = "POLYGON ((1208064.271243039 624154.6783778917, 1208064.271243039 601260.9785661874, 1231345.9998651114 601260.9785661874, 1231345.9998651114 624154.6783778917, 1208064.271243039 624154.6783778917))"
+>>> wkt2 = "POLYGON ((1199915.6662253144 633079.3410163528, 1199915.6662253144 614453.958118695, 1219317.1067437078 614453.958118695, 1219317.1067437078 633079.3410163528, 1199915.6662253144 633079.3410163528)))"
+>>> from osgeo import ogr
+>>> poly1 = ogr.CreateGeometryFromWkt(wkt1)
+>>> poly2 = ogr.CreateGeometryFromWkt(wkt2)
+>>> intersection = poly1.Intersection(poly2)
+>>> poly1
+<osgeo.ogr.Geometry; proxy of <Swig Object of type 'OGRGeometryShadow *' at 0x116b5e240> >
+>>> intersection
+<osgeo.ogr.Geometry; proxy of <Swig Object of type 'OGRGeometryShadow *' at 0x116b5e4e0> >
+>>> poly1.Intersection
+<bound method Geometry.Intersection of <osgeo.ogr.Geometry; proxy of <Swig Object of type 'OGRGeometryShadow *' at 0x116b5e240> >>
+>>> poly1.Union
+<bound method Geometry.Union of <osgeo.ogr.Geometry; proxy of <Swig Object of type 'OGRGeometryShadow *' at 0x116b5e240> >>
+>>> poly1.Difference
+<bound method Geometry.Difference of <osgeo.ogr.Geometry; proxy of <Swig Object of type 'OGRGeometryShadow *' at 0x116b5e240> >>
+>>> 
+#+END_EXAMPLE
+so, apparently, osgeo will do what i like.  now, how do i read in a
+kml file?
+
+[[https://docs.python.org/2/library/zipfile.html][here]] is how to get read a zip file, in order to access to the KML file
+in a Soberanes kmz (zip) file:
+#+BEGIN_EXAMPLE
+>>> import zipfile
+>>> zipfile.ZipFile
+<class 'zipfile.ZipFile'>
+>>> zf = zipfile.ZipFile("20160729_Soberanes_IR.kmz", "r")
+>>> zf
+<zipfile.ZipFile object at 0x103a85450>
+>>> zf.namelist()
+['doc.kml', 'isolated_heat.png', 'NIRlogo.gif', 'legend.png', '[Content_Types].xml']
+>>> doc = zf.open("doc.kml")
+>>> doc
+<zipfile.ZipExtFile object at 0x103a854d0>
+>>> doc.read()
+lots of data
+>>> from pykml import parser
+>>> doc = zf.open("doc.kml")
+>>> root = parser.fromstring(doc.read())
+
+#+END_EXAMPLE
+
+to read a kml file, install [[http://pythonhosted.org/pykml/index.html][pykml]]; need to do (?) as sudo.
+
+now, how to get parsed KML file into an osgeo/ogr object?  [[http://trac.osgeo.org/gdal/wiki/Release/1.5.0-News][apparently]]
+there is an ogr.CreateGeometryFromKML in GDAL (ver. 1.5.0?).
+
+#+BEGIN_EXAMPLE
+>>> f = ogr.Open("doc.kml")
+>>> f is None
+False
+>>> f.GetDriver()
+<osgeo.ogr.Driver; proxy of <Swig Object of type 'OGRDriverShadow *' at 0x1024bdab0> >
+>>> f.GetDriver().GetName()
+'KML'
+>>> f.GetName()
+'doc.kml'
+>>> f.getLayerCount
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/sw/lib/python2.7/site-packages/osgeo/ogr.py", line 546, in <lambda>
+    __getattr__ = lambda self, name: _swig_getattr(self, DataSource, name)
+  File "/sw/lib/python2.7/site-packages/osgeo/ogr.py", line 57, in _swig_getattr
+    raise AttributeError(name)
+AttributeError: getLayerCount
+>>> f.GetLayerCount()
+1
+>>> f.GetLayer(1)
+>>> range(1)
+[0]
+>>> f.GetLayer(0)
+<osgeo.ogr.Layer; proxy of <Swig Object of type 'OGRLayerShadow *' at 0x1024b3cf0> >
+>>> f.GetLayer(0).GetLayerDefn()
+<osgeo.ogr.FeatureDefn; proxy of <Swig Object of type 'OGRFeatureDefnShadow *' at 0x1024b3ba0> >
+>>> f.GetLayer(0).GetLayerDefn().GetName()
+'Soberanes'
+#+END_EXAMPLE
+** files formats
+*** KML
+*** KMZ
+
+a [[https://developers.google.com/kml/documentation/kmzarchives][kmz]] file should contain only one .kml file; it need not be called
+"doc.kml", though that's probably fairly common.
