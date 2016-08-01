@@ -1,6 +1,9 @@
-import sys
+from __future__ import print_function # for eprint() below
+
+import getopt
 import osgeo
 from osgeo import ogr
+import sys
 
 # XXX
 # it would be nice to read direct from a .kmz (zip) file.  but it
@@ -19,19 +22,20 @@ alname = "Soberanes"
 afname = "Heat Perimeter"
 
 # from [[http://stackoverflow.com/a/14981125][stack exchange]]
-from __future__ import print_function
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
 def usage(cmd):
-    print "usage: %s [{-l|--layername} name] [{-f|--featurename} name]
-{-o|--output} filename infile1 [infile2 [infile3 [ ... ]]]"
+    print("usage: %s [{-l|--layername} name] [{-f|--featurename} name]\
+{-o|--output} filename infile1 [infile2 [infile3 [ ... ]]]")
     sys.exit(1)
 
 
 def main(argv):
-    opts, args = getopt(argv[1:], "f:l:o:", ["featurename", "layername", "output"])
+    try:
+        opts, args = getopt(argv[1:], "f:l:o:",
+                            ["featurename", "layername", "output"])
     except getopt.GetoptError:
         usage(argv[0])
     for opt, arg in opts:
@@ -69,3 +73,7 @@ for featid in range(l.GetFeatureCount()):
     name = feature.GetFieldAsString(fieldid);
     if (name == "Heat Perimeter"):
         print("success")
+
+if __name__ == "__main__":
+    usage("help")
+    main(sys.argv)
