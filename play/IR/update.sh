@@ -2,7 +2,7 @@
 
 # get all the VIIR (?) IR files into place and unzipped
 
-for i in `ls ~/Downloads/201607*Soberanes_IR.kmz | sed sX/Users/minshall/Downloads/XX | sed sX.kmzXX`; do
+for i in `ls ~/Downloads/20160[78]*Soberanes_IR.kmz | sed sX/Users/minshall/Downloads/XX | sed sX.kmzXX`; do
     if [ ! -e $i ]; then
         mkdir $i;
     fi
@@ -15,5 +15,9 @@ for i in `ls ~/Downloads/201607*Soberanes_IR.kmz | sed sX/Users/minshall/Downloa
     if grep -H Sobranes $i/doc.kml; then
         echo fixing up $i/doc.kml
         (echo g/Sobranes/s/Sobranes/Soberanes/; echo wq) | ed $i/doc.kml
+    fi
+    if grep -H Sorberanes $i/doc.kml; then
+        echo fixing up $i/doc.kml
+        (echo g/Sorberanes/s/Sorberanes/Soberanes/; echo wq) | ed $i/doc.kml
     fi
 done
