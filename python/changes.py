@@ -33,20 +33,20 @@ def main(argv):
                         help="name of desired feature (within layer)")
     parser.add_argument('-o', '--output', type=argparse.FileType('w'),
                         required=True)
-    parser.add_argument('files', type=argparse.FileType('r'))
+    parser.add_argument('ifiles', type=argparse.FileType('r'), nargs='+')
     args = parser.parse_args();
     if args.layername is None:
         eprint("missing layername")
         usage(cmd)
-
-# for first file, set base polygon to its polygon with initial color (white)
-
-# for each succeeding file before the last file, set the new polygon -
-# old to a new color
-
-# for the last file, set the last polygon - old polygon to the
-# terminal color (rust red)
-
+    # for first file, set base polygon to its polygon with initial color (white)
+    print(args.ifiles[0])
+    # for each succeeding file before the last file, set the new polygon -
+    # old to a new color
+    for ifile in args.ifiles[1:len(args.ifiles)-1]:
+        print(ifile)
+    # for the last file, set the last polygon - old polygon to the
+    # terminal color (rust red)
+    print(args.ifiles[len(args.ifiles)-1])
 # now write out a new KML file with the result.
 
 
