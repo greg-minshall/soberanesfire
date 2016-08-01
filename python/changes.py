@@ -1,6 +1,6 @@
 from __future__ import print_function # for eprint() below
 
-import getopt
+import argparse
 import osgeo
 from osgeo import ogr
 import sys
@@ -17,34 +17,26 @@ import sys
 # XXX
 
 # get layer name: Soberanes
-alname = "Soberanes"
 # get feature name: Heat Perimeter
-afname = "Heat Perimeter"
 
 # from [[http://stackoverflow.com/a/14981125][stack exchange]]
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
-def usage(cmd):
-    print("usage: %s [{-l|--layername} name] [{-f|--featurename} name]\
-{-o|--output} filename infile1 [infile2 [infile3 [ ... ]]]")
-    sys.exit(1)
-
-
 def main(argv):
-    try:
-        opts, args = getopt(argv[1:], "f:l:o:",
-                            ["featurename", "layername", "output"])
-    except getopt.GetoptError:
-        usage(argv[0])
-    for opt, arg in opts:
-        if opt in ["f", "featurename"]:
-            afname = arg
-        elif opt in ["l", "layername"]:
-            alname = arg
-        elif opt in ["o", "output"]:
-            aoname = arg
+    cmd = argv[0];
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', '--layername', type=str, required=True,
+                        help="name of desired layer")
+    parser.add_argument('-f', '--featurename', type=str, required=True,
+                        help="name of desired feature (within layer)")
+    parser.add_argument('-o', '--output', type=argparse.FileType('w'),
+                        required=True)
+    args = parser.parse_args();
+    if args.layername is None:
+        eprint("missing layername")
+        usage(cmd)
 
 # for first file, set base polygon to its polygon with initial color (white)
 
@@ -75,5 +67,4 @@ for featid in range(l.GetFeatureCount()):
         print("success")
 
 if __name__ == "__main__":
-    usage("help")
     main(sys.argv)
