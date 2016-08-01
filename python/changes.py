@@ -68,19 +68,23 @@ def procfile(filename, layername, featurename):
     if l is None:
         eprint("layer '%s' is not found in file '%s'" % (layername, filename))
         sys.exit(3)
-    # find the field
-    fid = -1
+    # find the right feature
+    found = False
     for featid in range(l.GetFeatureCount()):
         feature = l.GetFeature(featid); # type(feature) == OGRFeatureH
         fieldid = feature.GetFieldIndex("Name");
         name = feature.GetFieldAsString(fieldid);
         if (name == featurename):
-            fid = fieldid;
+            found = True
             break;
-    if fid == -1:
+    if not found:
         eprint("feature name '%s' not found in layer '%s' in file '%s'" %
                (featurename, layername, filename))
         sys.exit(3)
+    # okay, we found the right feature.  now, find the polygon, maybe
+    # a multigeometry
+    geometry = feature.GetGeometryRef()
+    print(geometry);
 
 if __name__ == "__main__":
     main(sys.argv)
