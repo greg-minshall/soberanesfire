@@ -1,6 +1,7 @@
 from __future__ import print_function # for eprint() below
 
 import argparse
+import os
 import osgeo
 from osgeo import ogr
 import sys
@@ -33,11 +34,19 @@ def main(argv):
                         help="name of desired feature (within layer)")
     parser.add_argument('-o', '--output', type=argparse.FileType('w'),
                         required=True)
-    parser.add_argument('ifiles', type=argparse.FileType('r'), nargs='+')
+    # use "type=str" since we use the file name for ogr.Open()
+    parser.add_argument('ifiles', type=str, nargs='+')
     args = parser.parse_args();
-    if args.layername is None:
-        eprint("missing layername")
-        usage(cmd)
+
+    # make sure ifiles are all readable
+    badfile = False
+    for ifile in args.ifiles:
+        if not os.access(ifile, os.R_OK):
+            eprint("input file '%s' cannot be read" % ifile)
+            badfile = True
+    if badfile:
+        sys.exit(2)
+            
     # for first file, set base polygon to its polygon with initial color (white)
     print(args.ifiles[0])
     # for each succeeding file before the last file, set the new polygon -
