@@ -59,14 +59,14 @@ def main(argv):
 
     # now write out a new KML file with the result.
 
-def procfile(filename, lname, fname):
+def procfile(filename, layername, featurename):
     """extract the polygon of a given feature in a given layer in a given file"""
     file = ogr.Open(filename)
     # print("this is %s data" % file.GetDriver().GetName())
     # print("there is/are %d layer(s)" % file.GetLayerCount())
-    l = file.GetLayerByName(lname) # type(l) == OGRLayerH
+    l = file.GetLayerByName(layername) # type(l) == OGRLayerH
     if l is None:
-        eprint("layer '%s' is not found in file '%s'" % (lname, filename))
+        eprint("layer '%s' is not found in file '%s'" % (layername, filename))
         sys.exit(3)
     # find the field
     fid = -1
@@ -74,12 +74,12 @@ def procfile(filename, lname, fname):
         feature = l.GetFeature(featid); # type(feature) == OGRFeatureH
         fieldid = feature.GetFieldIndex("Name");
         name = feature.GetFieldAsString(fieldid);
-        if (name == fname):
+        if (name == featurename):
             fid = fieldid;
             break;
     if fid == -1:
         eprint("feature name '%s' not found in layer '%s' in file '%s'" %
-               (fname, lname, filename))
+               (featurename, layername, filename))
         sys.exit(3)
 
 if __name__ == "__main__":
