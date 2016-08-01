@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# get all the VIIR (?) IR files into place and unzipped
+
+for i in `ls ~/Downloads/201607*Soberanes_IR.kmz | sed sX/Users/minshall/Downloads/XX | sed sX.kmzXX`; do
+    if [ ! -e $i ]; then
+        mkdir $i;
+    fi
+    if [ ! -e $i/$i.kmz ]; then
+        cp -p ~/Downloads/$i.kmz $i;
+    fi
+    if [ ! -e $i/doc.kml ]; then
+        (cd $i; unzip $i.kmz doc.kml)
+    fi;
+done
