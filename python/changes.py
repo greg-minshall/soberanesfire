@@ -48,7 +48,7 @@ def main(argv):
         sys.exit(2)
             
     # for first file, set base polygon to its polygon with initial color (white)
-    print(args.ifiles[0])
+    procfile(args.ifiles[0], args.layername, args.featurename)
     # for each succeeding file before the last file, set the new polygon -
     # old to a new color
     for ifile in args.ifiles[1:len(args.ifiles)-1]:
@@ -56,25 +56,31 @@ def main(argv):
     # for the last file, set the last polygon - old polygon to the
     # terminal color (rust red)
     print(args.ifiles[len(args.ifiles)-1])
-# now write out a new KML file with the result.
 
+    # now write out a new KML file with the result.
 
-f = ogr.Open("doc.kml")
-print("this is %s data" % f.GetDriver().GetName())
-print("data source is %s" % f.GetName())
-print("there is/are %d layer(s)" % f.GetLayerCount())
-print("the first layer is named '%s'" % f.GetLayer(0).GetLayerDefn().GetName())
-print(f.GetLayerByName("Soberanes").GetName())
-
-l = f.GetLayerByName("Soberanes")
-
-hpfid = -1
-for featid in range(l.GetFeatureCount()):
-    feature = l.GetFeature(featid);
-    fieldid = feature.GetFieldIndex("Name");
-    name = feature.GetFieldAsString(fieldid);
-    if (name == "Heat Perimeter"):
-        print("success")
+def procfile(filename, lname, fname):
+    """extract the polygon of a given feature in a given layer in a given file"""
+    file = ogr.Open(filename)
+    # print("this is %s data" % file.GetDriver().GetName())
+    # print("there is/are %d layer(s)" % file.GetLayerCount())
+    l = file.GetLayerByName(lname) # type(l) == OGRLayerH
+    if l is None:
+        eprint("layer '%s' is not found in file '%s'" % (lname, filename))
+        sys.exit(3)
+    # find the field
+    fid = -1
+    for featid in range(l.GetFeatureCount()):
+        feature = l.GetFeature(featid); # type(feature) == OGRFeatureH
+        fieldid = feature.GetFieldIndex("Name");
+        name = feature.GetFieldAsString(fieldid);
+        if (name == fname):
+            fid = fieldid;
+            break;
+    if fid == -1:
+        eprint("feature name '%s' not found in layer '%s' in file '%s'" %
+               (fname, lname, filename))
+        sys.exit(3)
 
 if __name__ == "__main__":
     main(sys.argv)
