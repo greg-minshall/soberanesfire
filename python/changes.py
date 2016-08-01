@@ -33,6 +33,7 @@ def main(argv):
                         help="name of desired feature (within layer)")
     parser.add_argument('-o', '--output', type=argparse.FileType('w'),
                         required=True)
+    parser.add_argument('files', type=argparse.FileType('r'))
     args = parser.parse_args();
     if args.layername is None:
         eprint("missing layername")
