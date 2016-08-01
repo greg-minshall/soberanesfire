@@ -11,5 +11,9 @@ for i in `ls ~/Downloads/201607*Soberanes_IR.kmz | sed sX/Users/minshall/Downloa
     fi
     if [ ! -e $i/doc.kml ]; then
         (cd $i; unzip $i.kmz doc.kml)
-    fi;
+    fi
+    if grep -H Sobranes $i/doc.kml; then
+        echo fixing up $i/doc.kml
+        (echo g/Sobranes/s/Sobranes/Soberanes/; echo wq) | ed $i/doc.kml
+    fi
 done
