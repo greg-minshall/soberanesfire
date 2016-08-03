@@ -48,14 +48,15 @@ def main(argv):
         sys.exit(2)
             
     # for first file, set base polygon to its polygon with initial color (white)
-    procfile(args.ifiles[0], args.layername, args.featurename)
+    pgons = [procfile(args.ifiles[0], args.layername, args.featurename)]
     # for each succeeding file before the last file, set the new polygon -
     # old to a new color
     for ifile in args.ifiles[1:len(args.ifiles)-1]:
-        print(ifile)
+        pgons = pgons + [procfile(ifile, args.layername, args.featurename)]
     # for the last file, set the last polygon - old polygon to the
     # terminal color (rust red)
-    print(args.ifiles[len(args.ifiles)-1])
+    pgons = pgons + \
+        [procfile(args.ifiles[len(args.ifiles)-1], args.layername, args.featurename)]
 
     # now write out a new KML file with the result.
 
@@ -84,7 +85,7 @@ def procfile(filename, layername, featurename):
     # okay, we found the right feature.  now, find the polygon, maybe
     # a multigeometry
     geometry = feature.GetGeometryRef()
-    print(geometry);
+    return geometry
 
 if __name__ == "__main__":
     main(sys.argv)
