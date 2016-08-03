@@ -84,7 +84,8 @@ lots of data
 to read a kml file, install [[http://pythonhosted.org/pykml/index.html][pykml]]; need to do (?) as sudo.
 
 now, how to get parsed KML file into an osgeo/ogr object?  [[http://trac.osgeo.org/gdal/wiki/Release/1.5.0-News][apparently]]
-there is an ogr.CreateGeometryFromKML in GDAL (ver. 1.5.0?).
+there is an ogr.CreateGeometryFromKML in GDAL (ver. 1.5.0?).  so,
+maybe don't need pykml, after all.
 
 #+BEGIN_EXAMPLE
 >>> f = ogr.Open("doc.kml")
@@ -116,9 +117,67 @@ AttributeError: getLayerCount
 >>> f.GetLayer(0).GetLayerDefn().GetName()
 'Soberanes'
 #+END_EXAMPLE
+
+gdal comes with a sample ogrinfo.py that is fairly useful.  it prints
+out its report in [[https://en.wikipedia.org/wiki/Well-known_text][WKT]] format.
+
+[[http://gis.stackexchange.com/questions/141966/python-gdal-ogr-open-or-driver-open][apparently]] you can force ogr to open in a specific format.
+
+question now is: i can open the zip (.kmz) file and read the
+contents.  and, given doc.kml, i can get that into ogr.  but, i don't
+know how to get the doc.kml into ogr (without actually extracting the
+archive, which i'd aestheticly rather not do).
+
+there's something called [[http://www.paolocorti.net/2012/03/08/gdal_virtual_formats/][gdal virtual formats]].  there *is* a [[https://trac.osgeo.org/gdal/wiki/UserDocs/ReadInZip][zip
+virtual format]].  it can't deal with an extenson .kmz, but can find the
+file if it is renamed to .zip:
+#+BEGIN_EXAMPLE
+bash greg-minshalls-mbp-2: {1492} ogrinfo /vsizip/foo.zip/doc.kml
+ERROR 1: Random access not supported for /vsizip
+Had to open data source read-only.
+INFO: Open of `/vsizip/foo.zip/doc.kml'
+      using driver `KML' successful.
+1: Sobranes
+#+END_EXAMPLE
+[[http://www.gdal.org/cpl__vsi_8h.html][/vsimem]] might be useful.  there are also /vsicurl, /vsis3 (Amazon S3)
+
+we want to create a [[http://www.gdal.org/ogr__api_8h.html][OGRDataSourceH]] (which is what everything works
+on).
+
+probably one can't really do this in the current situation.  so, just
+assume files are extracted.
+
 ** files formats
 *** KML
+
+need to produce a kml file.  actually, producing *any* sort of file,
+especially a shapefile, would be a step in the right direction.
+
+[[https://developers.google.com/kml/articles/vector][here]] is a note on producing a KML file using GDAL.  but, it assumes
+you already have, e.g., a shapefile you're trying to convert.
+
+[[http://www.gdal.org/ogr_apitut.html][here]] is a tutorial on how to (read and how to) create a shapefile.
+OGR_DS_CreateLayer() appears to be a key part.  here you say what kind
+of geometry you are using.  Van used Polygons, having different
+layers, i guess, for the different (isolated) areas from the same
+days.  the files from Calfire use Multipolygons.  Van's way gives you
+finer control of what to see, but probably he did it because his older
+software found that easier, or his own custom is to do that.
+
+hmm: find driver using GDALGetDriverByName(), do GDALCreate() to
+create a GDALDatasetH with this driver.  then use OGR_DS_CreateLayer()
+to create an OGRLayerH, the output layer.
+
+(there's a python code example at the end of the tutorial.)
+
 *** KMZ
 
 a [[https://developers.google.com/kml/documentation/kmzarchives][kmz]] file should contain only one .kml file; it need not be called
 "doc.kml", though that's probably fairly common.
+
+** colors
+
+i'd like to use [[http://colorbrewer2.org/][Color Brewer]] (more [[http://www.personal.psu.edu/cab38/ColorBrewer/ColorBrewer_intro.html][info here]]), but the packages seem
+either [[https://pypi.python.org/pypi/colorbrewer][old]], or [[http://stanford.edu/~mwaskom/software/seaborn/index.html][require]] matplotlib (and, possibly, don't actually give
+you access to color numbers).  [[https://github.com/dsc/colorbrewer-python][colorbrewer-python]] might be the way to
+go, though it is just the data.
