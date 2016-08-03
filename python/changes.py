@@ -3,6 +3,7 @@ from __future__ import print_function # for eprint() below
 import argparse
 import os
 import osgeo
+from osgeo import gdal
 from osgeo import ogr
 import sys
 
@@ -32,8 +33,7 @@ def main(argv):
                         help="name of desired layer")
     parser.add_argument('-f', '--featurename', type=str, required=True,
                         help="name of desired feature (within layer)")
-    parser.add_argument('-o', '--output', type=argparse.FileType('w'),
-                        required=True)
+    parser.add_argument('-o', '--output', type=str, required=True)
     # use "type=str" since we use the file name for ogr.Open()
     parser.add_argument('ifiles', type=str, nargs='+')
     args = parser.parse_args();
@@ -46,9 +46,13 @@ def main(argv):
             badfile = True
     if badfile:
         sys.exit(2)
+    if not os.access(args.output, os.W_OK):
+        eprint("output file '%s' cannot be written" % args.output)
+        sys.exit(2)
             
     # for first file, set base polygon to its polygon with initial color (white)
     pgons = [procfile(args.ifiles[0], args.layername, args.featurename)]
+    print(pgons[0])
     # for each succeeding file before the last file, set the new polygon -
     # old to a new color
     for ifile in args.ifiles[1:len(args.ifiles)-1]:
@@ -60,6 +64,31 @@ def main(argv):
 
     # now write out a new KML file with the result.
 
+    # much of this from http://www.gdal.org/ogr_apitut.html
+    drv = gdal.GetDriverByName("KML");
+    if drv is None:
+        eprint("KML driver not found")
+        sys.exit(4)
+    ds = drv.Create(args.output, 0, 0, 0, gdal.GDT_Unknown)
+    if ds is None:
+        eprint("can't create output file %s" % args.output)
+        sys.exit(2)
+    layer = ds.CreateLayer("Perimeter", None, ogr.wkbMultiPolygon)
+    if layer is None:
+        eprint("can't create MultiPolygon layer");
+        sys.exit(4)
+
+    # need to define fields in feature before defining feature
+    field_defn = ogr.FieldDefn("Name", ogr.OFTString)
+    field_defn.SetWidth(32)     # XXX
+    if layer.CreateField(field_defn) != 0:
+        eprint("Creating name field failed")
+        sys.exit(4)
+    feature = ogr.Feature(layer.GetLayerDefn())
+    feature.SetField("Name", "fubar") # XXX
+    feature.SetGeometry(pgons[0])
+    ds = None                   # causes gdal.Close()
+
 def procfile(filename, layername, featurename):
     """extract the polygon of a given feature in a given layer in a given file"""
     file = ogr.Open(filename)
@@ -69,6 +98,7 @@ def procfile(filename, layername, featurename):
     if l is None:
         eprint("layer '%s' is not found in file '%s'" % (layername, filename))
         sys.exit(3)
+    l.ResetReading()
     # find the right feature
     found = False
     for featid in range(l.GetFeatureCount()):
@@ -84,7 +114,7 @@ def procfile(filename, layername, featurename):
         sys.exit(3)
     # okay, we found the right feature.  now, find the polygon, maybe
     # a multigeometry
-    geometry = feature.GetGeometryRef()
+    geometry = feature.GetGeometryRef().Clone()
     return geometry
 
 if __name__ == "__main__":
