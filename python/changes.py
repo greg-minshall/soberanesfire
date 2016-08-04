@@ -52,7 +52,6 @@ def main(argv):
             
     # for first file, set base polygon to its polygon with initial color (white)
     pgons = [procfile(args.ifiles[0], args.layername, args.featurename)]
-    print(pgons[0])
     # for each succeeding file before the last file, set the new polygon -
     # old to a new color
     for ifile in args.ifiles[1:len(args.ifiles)-1]:
@@ -87,6 +86,18 @@ def main(argv):
     feature = ogr.Feature(layer.GetLayerDefn())
     feature.SetField("Name", "fubar") # XXX
     feature.SetGeometry(pgons[0])
+    # http://www.programcreek.com/python/example/67701/ogr.wkbMultiPolygon
+    # print(ogr.GeometryTypeToName(pgons[0].GetGeometryType()));
+    if ogr.GT_Flatten(pgons[0].GetGeometryType()) == ogr.wkbMultiPolygon:
+        eprint("wkbMultiPolygon")
+        print(pgons[0].GetGeometryCount())
+        for i in range(pgons[0].GetGeometryCount()):
+            poly = pgons[0].GetGeometryRef(i)
+            print(poly)
+    if layer.CreateFeature(feature) != 0:
+        eprint("failed to create feature in KML file")
+        sys.exit(4)
+    print(feature.GetGeometryRef())
     ds = None                   # causes gdal.Close()
 
 def procfile(filename, layername, featurename):
