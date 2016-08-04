@@ -86,14 +86,6 @@ def main(argv):
     feature = ogr.Feature(layer.GetLayerDefn())
     feature.SetField("Name", "fubar") # XXX
     feature.SetGeometry(pgons[0])
-    # http://www.programcreek.com/python/example/67701/ogr.wkbMultiPolygon
-    # print(ogr.GeometryTypeToName(pgons[0].GetGeometryType()));
-    if ogr.GT_Flatten(pgons[0].GetGeometryType()) == ogr.wkbMultiPolygon:
-        eprint("wkbMultiPolygon")
-        print(pgons[0].GetGeometryCount())
-        for i in range(pgons[0].GetGeometryCount()):
-            poly = pgons[0].GetGeometryRef(i)
-            print(poly)
     if layer.CreateFeature(feature) != 0:
         eprint("failed to create feature in KML file")
         sys.exit(4)
