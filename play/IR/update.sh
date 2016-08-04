@@ -20,4 +20,8 @@ for i in `ls ~/Downloads/20160[78]*Soberanes_IR.kmz | sed sX/Users/minshall/Down
         echo fixing up $i/doc.kml
         (echo g/Sorberanes/s/Sorberanes/Soberanes/; echo wq) | ed $i/doc.kml
     fi
+    if grep -Hq ",0," $i/doc.kml; then
+        echo fixing up ",0," in $i/doc.kml
+        (echo "g/,0,/s/,0,/,0 /g"; echo wq) | echo ed $i/doc.kml
+    fi
 done
