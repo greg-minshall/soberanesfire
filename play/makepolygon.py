@@ -2,18 +2,26 @@
 # from https://pcjericks.github.io/py-gdalogr-cookbook/geometry.html
 from osgeo import ogr
 
-# Create ring
-ring = ogr.Geometry(ogr.wkbLinearRing)
-ring.AddPoint(1179091.1646903288, 712782.8838459781)
-ring.AddPoint(1161053.0218226474, 667456.2684348812)
-ring.AddPoint(1214704.933941905, 641092.8288590391)
-ring.AddPoint(1228580.428455506, 682719.3123998424)
-ring.AddPoint(1218405.0658121984, 721108.1805541387)
-ring.AddPoint(1179091.1646903288, 712782.8838459781)
+# Create outer ring
+outRing = ogr.Geometry(ogr.wkbLinearRing)
+outRing.AddPoint(1154115.274565847, 686419.4442701361)
+outRing.AddPoint(1154115.274565847, 653118.2574374934)
+outRing.AddPoint(1165678.1866605144, 653118.2574374934)
+outRing.AddPoint(1165678.1866605144, 686419.4442701361)
+outRing.AddPoint(1154115.274565847, 686419.4442701361)
+
+# Create inner ring
+innerRing = ogr.Geometry(ogr.wkbLinearRing)
+innerRing.AddPoint(1149490.1097279799, 691044.6091080031)
+innerRing.AddPoint(1149490.1097279799, 648030.5761158396)
+innerRing.AddPoint(1191579.1097525698, 648030.5761158396)
+innerRing.AddPoint(1191579.1097525698, 691044.6091080031)
+innerRing.AddPoint(1149490.1097279799, 691044.6091080031)
 
 # Create polygon
 poly = ogr.Geometry(ogr.wkbPolygon)
-poly.AddGeometry(ring)
+poly.AddGeometry(outRing)
+poly.AddGeometry(innerRing)
 
 print poly.ExportToWkt()
 
