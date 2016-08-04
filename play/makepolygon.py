@@ -2,33 +2,19 @@
 # from https://pcjericks.github.io/py-gdalogr-cookbook/geometry.html
 from osgeo import ogr
 
-poly = ogr.Geometry(ogr.wkbMultiPolygon)
+# Create a geometry collection
+poly =  ogr.Geometry(ogr.wkbGeometryCollection)
 
-# Create ring #1
-ring1 = ogr.Geometry(ogr.wkbLinearRing)
-ring1.AddPoint(1204067.0548148106, 634617.5980860253)
-ring1.AddPoint(1204067.0548148106, 620742.1035724243)
-ring1.AddPoint(1215167.4504256917, 620742.1035724243)
-ring1.AddPoint(1215167.4504256917, 634617.5980860253)
-ring1.AddPoint(1204067.0548148106, 634617.5980860253)
+# Add a point
+point = ogr.Geometry(ogr.wkbPoint)
+point.AddPoint(-122.23, 47.09)
+poly.AddGeometry(point)
 
-# Create polygon #1
-poly1 = ogr.Geometry(ogr.wkbPolygon)
-poly1.AddGeometry(ring1)
-poly.AddGeometry(poly1)
-
-# Create ring #2
-ring2 = ogr.Geometry(ogr.wkbLinearRing)
-ring2.AddPoint(1179553.6811741155, 647105.5431482664)
-ring2.AddPoint(1179553.6811741155, 626292.3013778647)
-ring2.AddPoint(1194354.20865529, 626292.3013778647)
-ring2.AddPoint(1194354.20865529, 647105.5431482664)
-ring2.AddPoint(1179553.6811741155, 647105.5431482664)
-
-# Create polygon #2
-poly2 = ogr.Geometry(ogr.wkbPolygon)
-poly2.AddGeometry(ring2)
-poly.AddGeometry(poly2)
+# Add a line
+line = ogr.Geometry(ogr.wkbLineString)
+line.AddPoint(-122.60, 47.14)
+line.AddPoint(-122.48, 47.23)
+poly.AddGeometry(line)
 
 print poly.ExportToWkt()
 
