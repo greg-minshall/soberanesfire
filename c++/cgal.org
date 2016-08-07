@@ -1,5 +1,6 @@
 #+title: work with CGAL
 #+property: noweb tangle
+#+property: header-args :flags -lCGAL -lgmp -L/sw/lib -I/sw/include -I/sw/opt/boost-1_58/include -I~/src/import/cgal/CGAL-4.8.1/
 
 # to get c++, you *enable* C, then *say* C++
 # http://orgmode.org/worg/org-contrib/babel/languages/ob-doc-C.html
@@ -15,7 +16,7 @@ ephemeral. Please edit cgal.org instead.
 #+end_src
 
 
-#+BEGIN_SRC C++ :flags -lCGAL -lgmp -L/sw/lib -I/sw/include -I/sw/opt/boost-1_58/include -I~/src/import/cgal/CGAL-4.8.1/
+#+BEGIN_SRC C++
 // <<caution>>
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
