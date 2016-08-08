@@ -46,7 +46,10 @@ int main()
 | The | polygon | is | not     | convex. |   |   |     |   |
 | 4   | 0       | 0  | 5.1     |       0 | 1 | 1 | 0.5 | 6 |
 
-#+BEGIN_SRC C++ :tangle cgal-play.cpp :noweb tangle
+
+
+#+name: ch_graham_andrew
+#+BEGIN_SRC C++ :cmdline < /Users/minshall/src/import/cgal/CGAL-4.8.1/examples/Convex_hull_2/ch_from_cin_to_cout.cin
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/ch_graham_andrew.h>
 
@@ -65,8 +68,78 @@ int main()
 }
 #+end_src
 
+#+RESULTS: ch_graham_andrew
+|    7 | 3861 |
+|   16 | 3750 |
+|   39 | 3540 |
+|  214 | 2814 |
+|  541 | 2072 |
+|  601 | 1962 |
+| 1004 | 1462 |
+| 1549 |  894 |
+| 1672 |  801 |
+| 1915 |  640 |
+| 2314 |  413 |
+| 2642 |  269 |
+| 3158 |  110 |
+| 3487 |   58 |
+| 4294 |   23 |
+| 4744 |   53 |
+| 5887 |  415 |
+| 6048 |  499 |
+| 6928 | 1142 |
+| 7075 | 1306 |
+| 7280 | 1548 |
+| 7637 | 2051 |
+| 8020 | 2942 |
+| 8065 | 3113 |
+| 8174 | 4474 |
+| 8053 | 5151 |
+| 7884 | 5617 |
+| 7812 | 5808 |
+| 7783 | 5877 |
+| 7629 | 6167 |
+| 7201 | 6764 |
+| 7146 | 6828 |
+| 6917 | 7037 |
+| 5981 | 7731 |
+| 5492 | 7943 |
+| 5357 | 7992 |
+| 4614 | 8158 |
+| 4356 | 8170 |
+| 3704 | 8171 |
+| 3420 | 8123 |
+| 2711 | 7939 |
+| 2411 | 7824 |
+| 2298 | 7773 |
+| 1909 | 7558 |
+| 1643 | 7366 |
+| 1495 | 7247 |
+| 1304 | 7087 |
+| 1155 | 6936 |
+|  910 | 6660 |
+|  756 | 6438 |
+|  509 | 6045 |
+|  406 | 5869 |
+|  172 | 5208 |
+|  156 | 5153 |
+|   32 | 4395 |
+
 here is [[http://homepages.math.uic.edu/~ddumas/teaching/2014/spring/mcs481/cgal-example/][an example]] on how to visualize cgal output using gnuplot.
 but, of course, one needs to output something...
+
+#+BEGIN_SRC gnuplot :var data=ch_graham_andrew
+set term png
+set output "output.png"
+set title "Convex Hull"
+set size square
+set key off
+set xrange [-1000:9000]
+set yrange [-1000:9000]
+plot "ch_from_cin_to_cout.cin" w p ps 0.25, \
+     "hull_closed.txt" w p ls 3, \
+     "" w l
+#+END_SRC
 
 #+RESULTS:
 
