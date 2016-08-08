@@ -68,6 +68,7 @@ int main()
 }
 #+end_src
 
+:ch_graham_andrew_results:
 #+RESULTS: ch_graham_andrew
 |    7 | 3861 |
 |   16 | 3750 |
@@ -124,11 +125,11 @@ int main()
 |  172 | 5208 |
 |  156 | 5153 |
 |   32 | 4395 |
+:end:
 
-here is [[http://homepages.math.uic.edu/~ddumas/teaching/2014/spring/mcs481/cgal-example/][an example]] on how to visualize cgal output using gnuplot.
-but, of course, one needs to output something...
+here is [[http://homepages.math.uic.edu/~ddumas/teaching/2014/spring/mcs481/cgal-example/][an example]] on how to visualize cgal output using [[http://orgmode.org/worg/org-contrib/babel/languages/ob-doc-gnuplot.html][gnuplot]].
 
-#+BEGIN_SRC gnuplot :var data=ch_graham_andrew
+#+BEGIN_SRC gnuplot :var data=ch_graham_andrew :results file
 set term png
 set output "output.png"
 set title "Convex Hull"
