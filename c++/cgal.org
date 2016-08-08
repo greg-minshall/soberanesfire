@@ -1,6 +1,6 @@
 #+title: work with CGAL
 #+property: noweb tangle
-#+property: header-args :flags -lCGAL -lgmp -L/sw/lib -I/sw/include -I/sw/opt/boost-1_58/include -I~/src/import/cgal/CGAL-4.8.1/
+#+property: header-args :flags -lCGAL -lgmp -lmpfr  -lboost_thread -L/sw/lib -L/sw/opt/boost-1_58/lib -I/sw/include -I/sw/opt/boost-1_58/include  -I~/src/import/cgal/CGAL-4.8.1/
 
 to get [[http://orgmode.org/worg/org-contrib/babel/languages/ob-doc-C.html][c++]], you *enable* C, then *say* C++
 
@@ -192,7 +192,7 @@ typedef Kernel::Point_2                                   Point_2;
 typedef CGAL::Polygon_2<Kernel>                           Polygon_2;
 typedef CGAL::Polygon_with_holes_2<Kernel>                Polygon_with_holes_2;
 typedef CGAL::Polygon_set_2<Kernel>                       Polygon_set_2;
-#include "print_utils.h"
+#include </Users/minshall/src/import/cgal/CGAL-4.8.1/examples/Boolean_set_operations_2/print_utils.h>
 int main ()
 {
   // Construct the two initial polygons and the clipping rectangle.
@@ -232,4 +232,12 @@ int main ()
 #+END_SRC
 
 #+RESULTS:
+| The  | result | contains | 2        | components: |           |    |           |          |           |      |      |      |       |      |      |          |           |    |    |          |          |    |    |      |       |    |    |          |          |   |
+| -->  | {      | Outer    | boundary | =           | [         | 10 | vertices: | (2       |        2) | (1   |   2) | (0   |    2) | (0   |   1) | (0       |        0) | (1 | 0) | (2       |       0) | (3 | 0) | (3   |    1) | (3 | 2) | ]        |          |   |
+| 1    | holes: |          |          |             |           |    |           |          |           |      |      |      |       |      |      |          |           |    |    |          |          |    |    |      |       |    |    |          |          |   |
+| Hole | #1     | =        | [        | 12          | vertices: | (3 | 1)        | (1.66667 | 0.333333) | (2   |   0) | (1.5 | 0.25) | (1   |   0) | (1.33333 | 0.333333) | (0 | 1) | (1.33333 | 1.66667) | (1 | 2) | (1.5 | 1.75) | (2 | 2) | (1.66667 | 1.66667) | ] |
+| }    |        |          |          |             |           |    |           |          |           |      |      |      |       |      |      |          |           |    |    |          |          |    |    |      |       |    |    |          |          |   |
+| -->  | {      | Outer    | boundary | =           | [         |  4 | vertices: | (1       |        1) | (1.5 | 0.5) | (2   |    1) | (1.5 | 1.5) | ]        |           |    |    |          |          |    |    |      |       |    |    |          |          |   |
+| 0    | holes: |          |          |             |           |    |           |          |           |      |      |      |       |      |      |          |           |    |    |          |          |    |    |      |       |    |    |          |          |   |
+| }    |        |          |          |             |           |    |           |          |           |      |      |      |       |      |      |          |           |    |    |          |          |    |    |      |       |    |    |          |          |   |
 
