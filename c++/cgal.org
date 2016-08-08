@@ -2,10 +2,9 @@
 #+property: noweb tangle
 #+property: header-args :flags -lCGAL -lgmp -L/sw/lib -I/sw/include -I/sw/opt/boost-1_58/include -I~/src/import/cgal/CGAL-4.8.1/
 
-# to get c++, you *enable* C, then *say* C++
-# http://orgmode.org/worg/org-contrib/babel/languages/ob-doc-C.html
+to get [[http://orgmode.org/worg/org-contrib/babel/languages/ob-doc-C.html][c++]], you *enable* C, then *say* C++
 
-# www.cems.uvm.edu/~rsnapp/teaching/cs274/src/triangles/triangles.html
+[[www.cems.uvm.edu/~rsnapp/teaching/cs274/src/triangles/triangles.html][this site]] has nice examples of using tangled web, org-mode, cgal.
 
 #+name: caution
 #+begin_src text
@@ -47,6 +46,9 @@ int main()
 | 4   | 0       | 0  | 5.1     |       0 | 1 | 1 | 0.5 | 6 |
 
 
+[[http://www.ics.uci.edu/~dock/manuals/cgal_manual/Convex_hull_2_ref/Function_ch_graham_andrew.html][ch_graham_andrew]] builds a convex hull ccw of a set of points.  this
+shows how an std::istream_iterator can be used to cons up a bunch of
+points from standard in, writing the output points to standard out.
 
 #+name: ch_graham_andrew
 #+BEGIN_SRC C++ :cmdline < /Users/minshall/src/import/cgal/CGAL-4.8.1/examples/Convex_hull_2/ch_from_cin_to_cout.cin
@@ -140,5 +142,41 @@ set yrange [-1000:9000]
 plot data w p ls 3, "" w l
 #+END_SRC
 
-#+RESULTS:
+from a cgal [[http://www.ics.uci.edu/~dock/manuals/cgal_manual/Polygon/Chapter_main.html#Section_2][example]]
+
+#+name: polygon_example
+#+BEGIN_SRC C++ :cmdline < ./polypoints.txt
+// file: examples/Polygon/Polygon.C
+
+#include <CGAL/Cartesian.h>
+#include <CGAL/Polygon_2.h>
+#include <iostream>
+
+typedef CGAL::Cartesian<double> K;
+typedef K::Point_2 Point_2;
+typedef CGAL::Polygon_2<K> Polygon;
+using std::cout; using std::endl;
+
+int main()
+{
+  CGAL::set_ascii_mode(std::cin);
+  CGAL::set_ascii_mode(std::cout);
+  std::istream_iterator<Point_2> in_start(std::cin);
+  std::istream_iterator<Point_2> in_end;
+  Polygon pgn(in_start, in_end);
+  // check if the polygon is simple.
+  cout << "The polygon is " << 
+    (pgn.is_simple() ? "" : "not ") << "simple." << endl;
+
+  // check if the polygon is convex
+  cout << "The polygon is " << 
+    (pgn.is_convex() ? "" : "not ") << "convex." << endl;
+
+  return 0;
+}
+#+end_src
+
+#+RESULTS: polygon_example
+| The | polygon | is | simple. |         |
+| The | polygon | is | not     | convex. |
 
