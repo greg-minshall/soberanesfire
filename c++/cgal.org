@@ -131,16 +131,18 @@ int main()
 
 here is [[http://homepages.math.uic.edu/~ddumas/teaching/2014/spring/mcs481/cgal-example/][an example]] on how to visualize cgal output using [[http://orgmode.org/worg/org-contrib/babel/languages/ob-doc-gnuplot.html][gnuplot]].
 
+#+name: gnuplotit
 #+BEGIN_SRC gnuplot :var data=ch_graham_andrew :results file
 set term png
 set output "output.png"
 set title "Convex Hull"
 set size square
 set key off
-set xrange [-1000:9000]
-set yrange [-1000:9000]
-plot data w p ls 3, "" w l
+unset border
+plot data w lp ls 3, "" w l
 #+END_SRC
+
+#+RESULTS: gnuplotit
 
 from a cgal [[http://www.ics.uci.edu/~dock/manuals/cgal_manual/Polygon/Chapter_main.html#Section_2][example]]
 
@@ -181,7 +183,7 @@ now, we try some [[http://doc.cgal.org/latest/Boolean_set_operations_2/index.htm
 multigeometries, we'll want to use [[http://doc.cgal.org/latest/Boolean_set_operations_2/classCGAL_1_1Polygon__set__2.html][Polygon_set_2<Kernel, Container,
 Dcel>]]
 
-#+BEGIN_SRC C++
+#+BEGIN_SRC C++ :results raw
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Polygon_2.h>
 #include <CGAL/Polygon_with_holes_2.h>
@@ -232,12 +234,28 @@ int main ()
 #+END_SRC
 
 #+RESULTS:
-| The  | result | contains | 2        | components: |           |    |           |          |           |      |      |      |       |      |      |          |           |    |    |          |          |    |    |      |       |    |    |          |          |   |
-| -->  | {      | Outer    | boundary | =           | [         | 10 | vertices: | (2       |        2) | (1   |   2) | (0   |    2) | (0   |   1) | (0       |        0) | (1 | 0) | (2       |       0) | (3 | 0) | (3   |    1) | (3 | 2) | ]        |          |   |
-| 1    | holes: |          |          |             |           |    |           |          |           |      |      |      |       |      |      |          |           |    |    |          |          |    |    |      |       |    |    |          |          |   |
-| Hole | #1     | =        | [        | 12          | vertices: | (3 | 1)        | (1.66667 | 0.333333) | (2   |   0) | (1.5 | 0.25) | (1   |   0) | (1.33333 | 0.333333) | (0 | 1) | (1.33333 | 1.66667) | (1 | 2) | (1.5 | 1.75) | (2 | 2) | (1.66667 | 1.66667) | ] |
-| }    |        |          |          |             |           |    |           |          |           |      |      |      |       |      |      |          |           |    |    |          |          |    |    |      |       |    |    |          |          |   |
-| -->  | {      | Outer    | boundary | =           | [         |  4 | vertices: | (1       |        1) | (1.5 | 0.5) | (2   |    1) | (1.5 | 1.5) | ]        |           |    |    |          |          |    |    |      |       |    |    |          |          |   |
-| 0    | holes: |          |          |             |           |    |           |          |           |      |      |      |       |      |      |          |           |    |    |          |          |    |    |      |       |    |    |          |          |   |
-| }    |        |          |          |             |           |    |           |          |           |      |      |      |       |      |      |          |           |    |    |          |          |    |    |      |       |    |    |          |          |   |
+The result contains 2 components:
+--> { Outer boundary = [ 10 vertices: (2 2) (1 2) (0 2) (0 1) (0 0) (1 0) (2 0) (3 0) (3 1) (3 2) ]
+  1 holes:
+    Hole #1 = [ 12 vertices: (3 1) (1.66667 0.333333) (2 0) (1.5 0.25) (1 0) (1.33333 0.333333) (0 1) (1.33333 1.66667) (1 2) (1.5 1.75) (2 2) (1.66667 1.66667) ]
+ }
+--> { Outer boundary = [ 4 vertices: (1 1) (1.5 0.5) (2 1) (1.5 1.5) ]
+  0 holes:
+ }
+
+#+name: pgon
+| 2 | 2 |
+| 1 | 2 |
+| 0 | 2 |
+| 0 | 1 |
+| 0 | 0 |
+| 1 | 0 |
+| 2 | 0 |
+| 3 | 0 |
+| 3 | 1 |
+| 3 | 2 |
+
+#+call: gnuplotit(data=pgon)
+
+#+RESULTS:
 
