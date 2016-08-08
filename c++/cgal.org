@@ -1,5 +1,8 @@
 #+title: work with CGAL
 #+property: noweb tangle
+
+need to get cgal programs to compile from the command line.  [[http://homepages.math.uic.edu/~ddumas/teaching/2014/spring/mcs481/cgal-example/][here]] are
+some tips:
 #+property: header-args :flags -lCGAL -lgmp -lmpfr  -lboost_thread -L/sw/lib -L/sw/opt/boost-1_58/lib -I/sw/include -I/sw/opt/boost-1_58/include  -I~/src/import/cgal/CGAL-4.8.1/
 
 to get [[http://orgmode.org/worg/org-contrib/babel/languages/ob-doc-C.html][c++]], you *enable* C, then *say* C++
@@ -222,26 +225,21 @@ int main ()
   // Print the result.
   std::list<Polygon_with_holes_2> res;
   std::list<Polygon_with_holes_2>::const_iterator it;
-  std::cout << "The result contains " << S.number_of_polygons_with_holes()
-            << " components:" << std::endl;
+//  std::cout << "The result contains " << S.number_of_polygons_with_holes()
+//            << " components:" << std::endl;
   S.polygons_with_holes (std::back_inserter (res));
-  for (it = res.begin(); it != res.end(); ++it) {
-    std::cout << "--> ";
-    print_polygon_with_holes (*it);
-  }
+//  for (it = res.begin(); it != res.end(); ++it) {
+//    std::cout << "--> ";
+//    print_polygon_with_holes (*it);
+//  }
+  std::cout << rect;
   return 0;
 }
 #+END_SRC
 
 #+RESULTS:
-The result contains 2 components:
---> { Outer boundary = [ 10 vertices: (2 2) (1 2) (0 2) (0 1) (0 0) (1 0) (2 0) (3 0) (3 1) (3 2) ]
-  1 holes:
-    Hole #1 = [ 12 vertices: (3 1) (1.66667 0.333333) (2 0) (1.5 0.25) (1 0) (1.33333 0.333333) (0 1) (1.33333 1.66667) (1 2) (1.5 1.75) (2 2) (1.66667 1.66667) ]
- }
---> { Outer boundary = [ 4 vertices: (1 1) (1.5 0.5) (2 1) (1.5 1.5) ]
-  0 holes:
- }
+4 0 0 3 0 3 2 0 2
+
 
 #+name: pgon
 | 2 | 2 |
@@ -259,3 +257,55 @@ The result contains 2 components:
 
 #+RESULTS:
 
+so, we should output the polygons in some format.  [[https://en.wikipedia.org/wiki/Well-known_text][Well known text
+(WKT)]] is probably what we want.  is [[http://docs.opengeospatial.org/is/12-063r5/12-063r5.html][this]] the official standard?
+
+[[http://svn.osgeo.org/postgis/trunk/doc/bnf-wkt.txt][here]] is the BNF.  the main things:
+#+BEGIN_EXAMPLE
+<well-known text representation> ::= 
+    <point text representation> | 
+    <curve text representation> |
+    <surface text representation> |
+    <collection text representation>
+<collection text representation> ::= 
+    <multipoint text representation> | 
+    <multicurve text representation> | 
+    <multisurface text representation> | 
+    <geometrycollection text representation>
+<multisurface text representation> ::= 
+    MULTISURFACE [ <z m> ] <multisurface text> | 
+    <multipolygon text representation> |
+    <polyhedralsurface text representation> |
+    <tin text representation>
+<geometrycollection text representation> ::= 
+    GEOMETRYCOLLECTION [ <z m> ] <geometrycollection text>
+<geometrycollection text> ::= 
+    <empty set> | 
+    <left paren> <well-known text representation> { <comma> <well-known text representation> }... <right paren>
+<multipolygon text representation> ::= 
+    MULTIPOLYGON [ <z m> ] <multipolygon text>
+<multipolygon text> ::= 
+    <empty set> | 
+    <left paren> <polygon text body> { <comma> <polygon text body> }... <right paren>
+<polygon text body> ::= 
+    <polygon text>
+<polygon text> ::= 
+    <empty set> | 
+    <left paren> <linestring text> { <comma> <linestring text> }... <right paren>
+<linestring text> ::= 
+    <empty set> | 
+    <left paren> <point> { <comma> <point> }... <right paren>
+<point> ::= <x> <y> [ <z> ] [ <m> ] 
+<x> ::= <number> 
+<y> ::= <number>
+<z> ::= <number>
+<m> ::= <number>
+#+END_EXAMPLE
+
+[[http://gis.stackexchange.com/q/54870][here's]] where i see how to get (something like) WKT out of ogr2ogr(1).
+the actual command is, e.g.,
+#+BEGIN_EXAMPLE
+ogr2ogr -f CSV out.wkt ~/work/gis/play/IR/20160807_Soberanes_IR/doc.kml -lco GEOMETRY=AS_WKT
+#+END_EXAMPLE
+"geometry=as_wkt" is discussed [[http://gdal.org/1.11/ogr/drv_csv.html][here]].  [[http://cartometric.com/blog/2011/11/18/ogr2ogr-export-well-known-text-wkt-for-one-feature-to-a-csv-file/][also]], ogrinfo(1) gives something
+similar, but need more parsing.
