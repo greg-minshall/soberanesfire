@@ -136,9 +136,7 @@ set size square
 set key off
 set xrange [-1000:9000]
 set yrange [-1000:9000]
-plot "ch_from_cin_to_cout.cin" w p ps 0.25, \
-     "hull_closed.txt" w p ls 3, \
-     "" w l
+plot data w p ls 3, "" w l
 #+END_SRC
 
 #+RESULTS:
