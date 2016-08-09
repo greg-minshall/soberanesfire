@@ -5,6 +5,7 @@ import os
 import osgeo
 from osgeo import gdal
 from osgeo import ogr
+from osgeo import wkt
 import sys
 
 # XXX
@@ -84,12 +85,17 @@ def main(argv):
         eprint("Creating name field failed")
         sys.exit(4)
     feature = ogr.Feature(layer.GetLayerDefn())
-    feature.SetField("Name", "fubar") # XXX
-    feature.SetGeometry(pgons[0])
+    feature.SetField("Name", args.featurename) # XXX
+    n = len(pgons)
+    # sometimes geometries are invalid:
+    # https://trac.osgeo.org/geos/wiki/TopologyExceptions
+    for i in range(len(pgons)):
+        print(pgons[i].IsValid())
+    x = pgons[1].Difference(pgons[0])
+    feature.SetGeometry(x)
     if layer.CreateFeature(feature) != 0:
         eprint("failed to create feature in KML file")
         sys.exit(4)
-    print(feature.GetGeometryRef())
     ds = None                   # causes gdal.Close()
 
 def procfile(filename, layername, featurename):
