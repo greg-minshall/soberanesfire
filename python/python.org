@@ -113,74 +113,27 @@ this prints the wkt of a layer/feature of a kml file
       print(*args, file=sys.stderr, **kwargs)
 
   def main(argv):
-      cmd = argv[0];
-      parser = argparse.ArgumentParser()
+      cmd = argv[0]
+      parser = argparse.ArgumentParser(description="extract the well-known text (wkt) of a feature of a layer in a file")
       parser.add_argument('-l', '--layername', type=str, required=True,
-                          help="name of desired layer")
+                          help="name of desired layer (in file)")
       parser.add_argument('-f', '--featurename', type=str, required=True,
                           help="name of desired feature (within layer)")
       # use "type=str" since we use the file name for ogr.Open()
-      parser.add_argument('ifiles', type=str, nargs='1')
+      parser.add_argument('ifile', type=str,
+                          help="file to process")
       args = parser.parse_args();
 
-      # make sure ifiles are all readable
-      badfile = False
-      for ifile in args.ifiles:
-          if not os.access(ifile, os.R_OK):
-              eprint("input file '%s' cannot be read" % ifile)
-              badfile = True
-      if badfile:
-          sys.exit(2)
-      if not os.access(args.output, os.W_OK):
-          eprint("output file '%s' cannot be written" % args.output)
+      # make sure ifile is readable
+      if not os.access(args.ifile, os.R_OK):
+          eprint("input file '%s' cannot be read" % args.ifile)
           sys.exit(2)
 
-      # for first file, set base polygon to its polygon with initial color (white)
-      pgons = [procfile(args.ifiles[0], args.layername, args.featurename)]
-      # for each succeeding file before the last file, set the new polygon -
-      # old to a new color
-      for ifile in args.ifiles[1:len(args.ifiles)-1]:
-          pgons = pgons + [procfile(ifile, args.layername, args.featurename)]
-      # for the last file, set the last polygon - old polygon to the
-      # terminal color (rust red)
-      pgons = pgons + \
-          [procfile(args.ifiles[len(args.ifiles)-1], args.layername, args.featurename)]
-
-      # now write out a new KML file with the result.
-
-      # much of this from http://www.gdal.org/ogr_apitut.html
-      drv = gdal.GetDriverByName("KML");
-      if drv is None:
-          eprint("KML driver not found")
-          sys.exit(4)
-      ds = drv.Create(args.output, 0, 0, 0, gdal.GDT_Unknown)
-      if ds is None:
-          eprint("can't create output file %s" % args.output)
-          sys.exit(2)
-      layer = ds.CreateLayer("Perimeter", None, ogr.wkbMultiPolygon)
-      if layer is None:
-          eprint("can't create MultiPolygon layer");
-          sys.exit(4)
-
-      # need to define fields in feature before defining feature
-      field_defn = ogr.FieldDefn("Name", ogr.OFTString)
-      field_defn.SetWidth(32)     # XXX
-      if layer.CreateField(field_defn) != 0:
-          eprint("Creating name field failed")
-          sys.exit(4)
-      feature = ogr.Feature(layer.GetLayerDefn())
-      feature.SetField("Name", args.featurename) # XXX
-      n = len(pgons)
-      # sometimes geometries are invalid:
-      # https://trac.osgeo.org/geos/wiki/TopologyExceptions
-      for i in range(len(pgons)):
-          print(pgons[i].IsValid())
-      x = pgons[1].Difference(pgons[0])
-      feature.SetGeometry(x)
-      if layer.CreateFeature(feature) != 0:
-          eprint("failed to create feature in KML file")
-          sys.exit(4)
-      ds = None                   # causes gdal.Close()
+      # get polygons from this file
+      pgons = procfile(args.ifile, args.layername, args.featurename)
+      # print(pgons)
+      wkt = pgons.ExportToWkt()
+      print(wkt)
 
   def procfile(filename, layername, featurename):
       """extract the polygon of a given feature in a given layer in a given file"""
