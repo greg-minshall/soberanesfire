@@ -83,8 +83,8 @@ print kml
 
 this prints the wkt of a layer/feature of a kml file
 
-#+name: lf2wkt.py
-#+BEGIN_SRC python :tangle lf2wkt.py
+#+name: extractwkt.py
+#+BEGIN_SRC python :tangle extractwkt.py
   from __future__ import print_function # for eprint() below
 
   import argparse
@@ -168,4 +168,70 @@ this prints the wkt of a layer/feature of a kml file
 #+END_SRC
 
 #+RESULTS:
+
+#+name: differencewkt
+#+BEGIN_SRC python :tangle differencewkt.py
+  from __future__ import print_function # for eprint() below
+
+  import argparse
+  import os
+  import osgeo
+  from osgeo import gdal
+  from osgeo import ogr
+  import sys
+  from shapely import wkt
+
+  # XXX
+  # it would be nice to read direct from a .kmz (zip) file.  but it
+  # doesn't seem like the current gdal/ogr supports that.
+  # import zipfile
+  # zf = zipfile.ZipFile("20160729_Soberanes_IR.kmz", "r")
+  # print(zf)
+  # zf.namelist()
+  # ndoc = zf.open("doc.kml")
+  # data = doc.read()
+  # XXX
+
+  # get layer name: Soberanes
+  # get feature name: Heat Perimeter
+
+  # from [[http://stackoverflow.com/a/14981125][stack exchange]]
+  def eprint(*args, **kwargs):
+      print(*args, file=sys.stderr, **kwargs)
+
+  def main(argv):
+      cmd = argv[0]
+      parser = argparse.ArgumentParser(description="compute the set-theoretic difference: fileA \\ fileB")
+      # use "type=str" since we use the file name for ogr.Open()
+      parser.add_argument('fileA', type=argparse.FileType('r'),
+                          help="base set")
+      parser.add_argument('fileB', type=argparse.FileType('r'),
+                          help="set to remove")
+      args = parser.parse_args();
+
+      geo1 = wkt.loads(args.fileA.read())
+      geo2 = wkt.loads(args.fileB.read())
+
+      print(geo1.is_valid)
+      print(geo2.is_valid)
+      geo3 = geo1.difference(geo2);
+
+  if __name__ == "__main__":
+      main(sys.argv)
+#+END_SRC
+
+try to figure out what's going on
+
+#+BEGIN_SRC python
+import shapely
+import shapely.geometry
+
+a = shapely.geometry.Point(1, 1).buffer(1.5)
+b = shapely.geometry.Point(2,2).buffer(1.5)
+c = a.difference(b)
+
+#+END_SRC
+
+#+RESULTS:
+: None
 
