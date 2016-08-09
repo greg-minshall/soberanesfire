@@ -34,11 +34,11 @@ then, export it somehow in kml format.
 #+BEGIN_SRC python :results output
 from osgeo import ogr
 
-wkt = "POINT (1120351.5712494177 741921.4223245403)"
-point = ogr.CreateGeometryFromWkt(wkt)
-print "%d,%d" % (point.GetX(), point.GetY())
+wkt = open("20160806_Soberanes_IR_heat_perimeter.wkt", "r").read()
+pgons = ogr.CreateGeometryFromWkt(wkt)
+print pgons
 #+END_SRC
 
 #+RESULTS:
-: 1120351,741921
+
 
