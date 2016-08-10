@@ -1,5 +1,7 @@
 * using python for gis things
 
+#+property: header-args :noweb yes
+
 ** using [[https://pypi.python.org/pypi/Shapely][shapely]]
 
 the [[toblerity.org/shapely/manual.html][manual]] looks promising.  shapely.wkt.loads(), shapely.wkt.dumps()
@@ -222,16 +224,81 @@ this prints the wkt of a layer/feature of a kml file
 
 try to figure out what's going on
 
-#+BEGIN_SRC python
+#+BEGIN_SRC python :results output
 import shapely
 import shapely.geometry
 
 a = shapely.geometry.Point(1, 1).buffer(1.5)
 b = shapely.geometry.Point(2,2).buffer(1.5)
 c = a.difference(b)
-
+c
 #+END_SRC
 
 #+RESULTS:
-: None
+
+now, it turns out (see gis.org) that the exact way the IR data is
+give, we can forget all about any of the GIS tools, and extract the
+desired KML-bits with awk.  then, assuming Google Earth pays attention
+to the order in which layers are defined, probably all will be good.
+
+#+name: filelist
+#+BEGIN_SRC sh :var root="/Users/minshall/work/gis/play/IR/" :var pat="doc.kml"
+cd ${root}; find . -name ${pat} | sed sX^\./XXg | sort -n
+#+END_SRC
+
+#+RESULTS: filelist
+| 20160724_Soberanes_IR/doc.kml |
+| 20160725_Soberanes_IR/doc.kml |
+| 20160726_Soberanes_IR/doc.kml |
+| 20160727_Soberanes_IR/doc.kml |
+| 20160728_Soberanes_IR/doc.kml |
+| 20160729_Soberanes_IR/doc.kml |
+| 20160730_Soberanes_IR/doc.kml |
+| 20160731_Soberanes_IR/doc.kml |
+| 20160801_Soberanes_IR/doc.kml |
+| 20160802_Soberanes_IR/doc.kml |
+| 20160803_Soberanes_IR/doc.kml |
+| 20160804_Soberanes_IR/doc.kml |
+| 20160805_Soberanes_IR/doc.kml |
+| 20160806_Soberanes_IR/doc.kml |
+| 20160807_Soberanes_IR/doc.kml |
+| 20160808_Soberanes_IR/doc.kml |
+
+
+#+name: extract_line
+#+begin_src python :session py :var trigger="Heat Perimeter" :var select="Polygon" :var file="~/work/gis/play/IR/20160808_Soberanes_IR/doc.kml" :results output verbatim
+  def extract_line(file, trigger, select):
+      """extract the first line matching SELECT that appears after the line matching TRIGGER"""
+      import re
+      f = open(file, 'r');
+      for t in f:
+          if (re.search(trigger, t)):
+              for t in f:
+                  if (re.search(select, t)):
+                      return t;
+#+end_src
+
+#+BEGIN_SRC python :session py :var kmlfiles=filelist :results output verbatim
+  <<extract_line>>
+
+  import os
+  kmls = []
+  print(kmlfiles)
+  for file in kmlfiles:
+      print file
+      kmls = kmls + [extract_line(os.path.expanduser(file[0]), trigger, select)]
+
+  print("okay")
+#+END_SRC
+
+#+RESULTS:
+: 
+: ... ... ... ... ... ... ... ... ... >>> >>> >>> [['20160724_Soberanes_IR/doc.kml'], ['20160725_Soberanes_IR/doc.kml'], ['20160726_Soberanes_IR/doc.kml'], ['20160727_Soberanes_IR/doc.kml'], ['20160728_Soberanes_IR/doc.kml'], ['20160729_Soberanes_IR/doc.kml'], ['20160730_Soberanes_IR/doc.kml'], ['20160731_Soberanes_IR/doc.kml'], ['20160801_Soberanes_IR/doc.kml'], ['20160802_Soberanes_IR/doc.kml'], ['20160803_Soberanes_IR/doc.kml'], ['20160804_Soberanes_IR/doc.kml'], ['20160805_Soberanes_IR/doc.kml'], ['20160806_Soberanes_IR/doc.kml'], ['20160807_Soberanes_IR/doc.kml'], ['20160808_Soberanes_IR/doc.kml']]
+: ... ... ... ['20160724_Soberanes_IR/doc.kml']
+: Traceback (most recent call last):
+:   File "<stdin>", line 3, in <module>
+:   File "<stdin>", line 4, in extract_line
+: IOError: [Errno 2] No such file or directory: '20160724_Soberanes_IR/doc.kml'
+: okay
+
 
