@@ -147,6 +147,42 @@ on).
 probably one can't really do this in the current situation.  so, just
 assume files are extracted.
 
+for cgal, there doesn't seem to [[https://github.com/CGAL/cgal-swig-bindings/wiki/Package_wrappers_available][really]] exist python bindings.
+
+*** C++
+
+following the [[http://doc.cgal.org/latest/Manual/installation.html][instructions for cgal]], did
+#+BEGIN_EXAMPLE
+cgal_create_CMakeLists -s executable
+# need BOOST_
+BOOST_INCLUDEDIR=/sw/opt/boost-1_58/include cmake -DCGAL_DIR=~/src/import/cgal/CGAL-4.8.1/ .
+make
+#+END_EXAMPLE
+
+but, this seems to work:
+#+BEGIN_EXAMPLE
+g++ -lCGAL -lgmp -L/sw/lib -I/sw/include -I/sw/opt/boost-1_58/include -I~/src/import/cgal/CGAL-4.8.1/ cgal-play.cpp
+#+END_EXAMPLE
+
+*** awk
+
+actually, it's just one line in each file that needs to be extracted.
+
+#+BEGIN_SRC awk :in-file ~/work/gis/play/IR/20160808_Soberanes_IR/doc.kml :results output verbatim
+  BEGIN {
+      trigger = 0;
+  }
+
+  /Heat Perimeter/ {
+      trigger = 1;
+  }
+
+  trigger == 1 && /Polygon/ {
+      print $0
+      exit;
+  }
+#+END_SRC
+
 ** files formats
 *** KML
 
@@ -170,6 +206,30 @@ to create an OGRLayerH, the output layer.
 
 (there's a python code example at the end of the tutorial.)
 
+then, fought a problem that turned out to be caused by my input .kml
+files not being in the correct format.  in particular, the polygons
+were specified with the Z coordinate having a "," (comma) rather than
+a " " (space) after it.  modified update.sh to handle this.
+
+then, it turns out that taking the difference of two (multi)polygons
+results in a set difference of the polygon edges, rather than areas.
+there are routines like [[http://www.gdal.org/gdal__alg_8h.html][GDALRasterizeGeometries]] that can put one into
+a raster.
+
+in ogr, there is a [[www.gdal.org/ogr__core_8h.html][wkbSurface]], et al., but they don't seem to be in
+use.
+
+[[http://www.sciencedirect.com/science/article/pii/S0747717113001272][A procedure for computing the symmetric difference of regions defined
+by polygonal curves]] is a paper by Miguel Belbut Gaspar and Nelson
+Martins-Ferreira on how to do this computation, from Journal of
+Symbolic Computation Volumes 61–62, February–March 2014, Pages 53–65,
+
+[[http://www.cgal.org/][CGAL]] has [[http://doc.cgal.org/latest/Boolean_set_operations_2/index.html][this]] function.  [[http://www.sfcgal.org/][sfcgal]] is some wrapper on cgal trying to
+provide [[http://www.opengeospatial.org/standards/sfa][OGC "Simple Feature Access"]].  but, we probably need to
+translate between gdal and cgal formats.
+
+there's something called [[http://www.pyngl.ucar.edu/index.shtml][PyNGL and PyNIO]], not really relevant.
+
 *** KMZ
 
 a [[https://developers.google.com/kml/documentation/kmzarchives][kmz]] file should contain only one .kml file; it need not be called
@@ -181,3 +241,18 @@ i'd like to use [[http://colorbrewer2.org/][Color Brewer]] (more [[http://www.pe
 either [[https://pypi.python.org/pypi/colorbrewer][old]], or [[http://stanford.edu/~mwaskom/software/seaborn/index.html][require]] matplotlib (and, possibly, don't actually give
 you access to color numbers).  [[https://github.com/dsc/colorbrewer-python][colorbrewer-python]] might be the way to
 go, though it is just the data.
+
+** future
+
+point it at a web site, the [[http://ftp.nifc.gov/incident_specific_data/calif_s/CALFIRE/2016_Incidents/CA-BEU-003422_Soberanes/IR/20160803/][parent of all the Soberanes incidents]],
+say, and at a local directory, and then the script downloads what's
+not already downloaded, determines the incident name by majority vote
+of all the downloaded reports, then produces the change map.  thus,
+the script is incident independent.
+
+[[http://www.geosensor.net/papers/duckham08.PR.pdf][this paper]] describes how to build a "concave hull" (from [[http://gis.stackexchange.com/q/1200][this question]]
+on stackexchage).  maybe cgal [[http://doc.cgal.org/latest/Manual/packages.html#PkgAlphaShape2Summary][provides]] something similar?
+
+** cleaning up input
+
+[[http://grokbase.com/t/r/r-sig-geo/12cezp33rh/cleaning-up-self-intersections][here]] is a 2012/2013 discussion of cleaning up polygons.
