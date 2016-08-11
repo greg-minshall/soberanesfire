@@ -291,59 +291,6 @@ find ${root} -name ${pat} | sed sX^\./XXg | sort -n
 okay, because of the IR doc.kml files' format, we can do all this
 without worrying much about GIS APIs.
 
-#+name: fprolog1
-#+BEGIN_EXAMPLE
-<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://earth.google.com/kml/2.0">
-<Document><name><REPLACEME></name>
-#+END_EXAMPLE
-
-[[http://www.personal.psu.edu/cab38/ColorBrewer/ColorBrewer.html][Color Brewer]], 9-class sequential PuBu
-#+name: colorbrewer
-| 0xfff7fb | 0xece7f2 | 0xd0d1e6 | 0xa6bddb | 0x74a9cf | 0x3690c0 | 0x0570b0 | 0x045a8d | 0x023858 |
-
-#+name: stylefrag
-#+BEGIN_EXAMPLE
-<Style id="style<FRAGID>">
-  <LineStyle id="lineStyle<FRAGID>">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle<FRAGID>">
-  <color><HEXVALUE></color>
-  </PolyStyle>
-</Style>
-#+END_EXAMPLE
-
-#+name: pprolog1
-#+BEGIN_EXAMPLE
-<Placemark><name><PLACEMARKNAME></name>
-  <styleUrl>#style<FRAGID></styleUrl>
-  <MultiGeometry><POLYGON>
-#+END_EXAMPLE
-
-#+name: ppost
-#+BEGIN_EXAMPLE
-</MultiGeometry></Placemark>
-#+END_EXAMPLE
-
-
-#+name: fpost
-#+BEGIN_EXAMPLE
-</Document>
-</kml>
-#+END_EXAMPLE
-
-
-#+name: fprolog2
-#+BEGIN_SRC python :var stylefrag=stylefrag :results output verbatim :cache yes
-  <<colorsub>>
-  <<fragsub>>
-
-  print fragsub(0, colorsub('0xffffff', stylefrag))
-#+END_SRC
-
-
 #+name: colorsub
 #+BEGIN_SRC python
   def colorsub(hexvalue, stylefrag):
@@ -368,41 +315,96 @@ without worrying much about GIS APIs.
 #+END_SRC
 
 colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
+
 #+name: fprolog2
-#+BEGIN_SRC python :var stylefrag=stylefrag :results output verbatim :cache yes
-  import re
-  print re.sub("<FRAGID>", "0", re.sub("<HEXVALUE>", "0x900000dc", stylefrag))
+#+BEGIN_SRC python :results verbatim
+  <<colorsub>>
+  <<fragsub>>
+
+  def fprolog2():
+      return fragsub(0, colorsub('0xffffff', stylefrag))
 #+END_SRC
 
-#+name: fprolog3
+#+RESULTS: fprolog2
+
+
+#+name: fprolog3 :results none
 #+BEGIN_SRC python :var colorbrewer=colorbrewer :var stylefrag=stylefrag :results output verbatim :cache yes
   <<colorsub>>
   <<fragsub>>
 
-  for i in range(len(colorbrewer[0])):
-      print fragsub(i+1, colorsub(colorbrewer[0][i], stylefrag))
+  def fprolog3():
+      result = ""
+      for i in range(len(colorbrewer[0])):
+          result = "{0}{1}".format(result,
+                                   fragsub(i+1,
+                                           colorsub(colorbrewer[0][i], stylefrag)))
 #+END_SRC
 
-
-#+name: fprolog4
+#+name: fprolog4 :results none
 #+BEGIN_SRC python :var stylefrag=stylefrag :results output :cache yes
-<<colorsub>>
-<<fragsub>>
-print fragsub("N", colorsub(0x0000dc, stylefrag))
+  <<colorsub>>
+  <<fragsub>>
+
+  def fprolog4():
+      return fragsub("N", colorsub(0x0000dc, stylefrag))
 #+END_SRC
+
 
 #+name: fprolog
-#+BEGIN_SRC python :var a=fprolog1 :var b=fprolog2 :var c=fprolog3 :cache yes :results output verbatim
-  print a, b, c
+#+BEGIN_SRC python :results none
+  <<fprolog1>>
+  <<fprolog2>>
+  <<fprolog3>>
+
+  def fprolog():
+      return "{0}\n{1}\n{2}\n{3}".format(fprolog1, fprolog2(), fprolog3(), fprolog4())
 #+END_SRC
+
 
 
 #+name: kmlfrags
-#+BEGIN_SRC python :var a=pprolog1 :var c=ppost  :results output verbatim :cache yes
-print a, c
+#+BEGIN_SRC python :results none
+  def kmlfrags():
+      return "{0}{1}".format(pprolog1, ppost)
 #+END_SRC
 
 #+name: fcomplete
-#+BEGIN_SRC python :var fprolog=fprolog :var kmlfrags=kmlfrags :var fpost=fpost :results output verbatim
-print fprolog, kmlfrags, fpost
+#+BEGIN_SRC python :results output verbatim
+  fprolog1 = """<?xml version="1.0" encoding="UTF-8"?>
+  <kml xmlns="http://earth.google.com/kml/2.0">
+  <Document><name><REPLACEME></name>"""
+
+  # from http://www.personal.psu.edu/cab38/ColorBrewer/ColorBrewer.html
+  # 9-class sequential PuBu
+  colorbrewer= [0xfff7fb, 0xece7f2, 0xd0d1e6, 0xa6bddb, 0x74a9cf,
+                0x3690c0, 0x0570b0, 0x045a8d, 0x023858]
+
+  stylefrag="""<Style id="style<FRAGID>">
+    <LineStyle id="lineStyle<FRAGID>">
+    <color>ff000000</color>
+    <width>2</width>
+    </LineStyle>
+    <PolyStyle id="polyStyle<FRAGID>">
+    <color><HEXVALUE></color>
+    </PolyStyle>
+  </Style>"""
+
+  pprolog1="""<Placemark><name><PLACEMARKNAME></name>
+    <styleUrl>#style<FRAGID></styleUrl>
+    <MultiGeometry><POLYGON>"""
+
+  ppost="""</MultiGeometry></Placemark>"""
+
+  fpost="""</Document>
+  </kml>"""
+
+  <<fprolog>>
+  <<kmlfrags>>
+  <<fpost>>
+
+  print fprolog(), kmlfrags(), fpost()
 #+END_SRC
+
+#+RESULTS: fcomplete
+
