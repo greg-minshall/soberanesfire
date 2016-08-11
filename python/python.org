@@ -329,20 +329,84 @@ print x;
 </Style>
 #+END_EXAMPLE
 
+#+name: colorsub
+#+BEGIN_SRC python
+  def colorsub(hexvalue, stylefrag):
+      import re
+      if type(hexvalue) is int:
+          hvalue = hexvalue
+      else:
+          hvalue = int(hexvalue, base=16)
+      return re.sub("<HEXVALUE>", "{0:x}".format(0x90000000 | hvalue), stylefrag)
+#+END_SRC
+
+#+name: fragsub
+#+BEGIN_SRC python
+  def fragsub(fragid, stylefrag):
+      import re
+
+      if type(fragid) is int:
+          sfrag = str(fragid)
+      else:
+          sfrag = fragid
+      return re.sub("<FRAGID>", sfrag, stylefrag)
+#+END_SRC
+
 #+name: fprolog2
 #+BEGIN_SRC python :var stylefrag=stylefrag :results output verbatim :cache yes
-  import re
-  print re.sub("<FRAGID>", "0", re.sub("<HEXVALUE>", "0xffffff", stylefrag))
+  <<colorsub>>
+  <<fragsub>>
+
+  print fragsub(0, colorsub('0xffffff', stylefrag))
 #+END_SRC
+
+#+RESULTS[76debd14a6d50c86e610eb00e30d338cc6b22d00]: fprolog2
+#+begin_example
+<Style id="style0">
+  <LineStyle id="lineStyle5">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle5">
+  <color>90ffffff</color>
+  </PolyStyle>
+</Style>
+
+#+end_example
+
 
 #+name: fprolog3
 #+BEGIN_SRC python :var colorbrewer=colorbrewer :var stylefrag=stylefrag :results output verbatim :cache yes
-   import re
+  <<colorsub>>
+  <<fragsub>>
 
-   for i in range(len(colorbrewer[0])):
-       print re.sub("<FRAGID>", str(i+1), re.sub("<HEXVALUE>", colorbrewer[0][i], stylefrag))
+  for i in range(len(colorbrewer[0])):
+      print fragsub(i+1, colorsub(colorbrewer[0][i], stylefrag))
 #+END_SRC
 
+
+#+name: fprolog4
+#+BEGIN_SRC python :var stylefrag=stylefrag :results output :cache yes
+<<colorsub>>
+<<fragsub>>
+print fragsub("N", colorsub(0x0000dc, stylefrag))
+#+END_SRC
+
+#+RESULTS[301df50507c75a192ccb70aabf7f042f73a07997]: fprolog4
+#+begin_example
+<Style id="styleN">
+  <LineStyle id="lineStyle5">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle5">
+  <color>900000dc</color>
+  </PolyStyle>
+</Style>
+
+#+end_example
+
+colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 #+name: fprolog2
 #+BEGIN_SRC python :var stylefrag=stylefrag :results output verbatim :cache yes
   import re
