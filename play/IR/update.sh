@@ -2,7 +2,7 @@
 
 # get all the VIIR (?) IR files into place and unzipped
 
-for i in `ls ~/Downloads/20160[78]*Soberanes_IR.kmz | sed sX/Users/minshall/Downloads/XX | sed sX.kmzXX`; do
+for i in `ls ~/Downloads/20160[78]*Soberanes_*.kmz | sed sX/Users/minshall/Downloads/XX | sed sX.kmzXX`; do
     if [ ! -e $i ]; then
         mkdir $i;
     fi
