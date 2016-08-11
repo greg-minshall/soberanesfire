@@ -288,6 +288,8 @@ find ${root} -name ${pat} | sed sX^\./XXg | sort -n
 
 #+END_SRC
 
+okay, because of the IR doc.kml files' format, we can do all this
+without worrying much about GIS APIs.
 
 #+name: fprolog1
 #+BEGIN_EXAMPLE
@@ -303,15 +305,44 @@ find ${root} -name ${pat} | sed sX^\./XXg | sort -n
 #+name: stylefrag
 #+BEGIN_EXAMPLE
 <Style id="style<FRAGID>">
-  <LineStyle id="lineStyle5">
+  <LineStyle id="lineStyle<FRAGID>">
   <color>ff000000</color>
   <width>2</width>
   </LineStyle>
-  <PolyStyle id="polyStyle5">
+  <PolyStyle id="polyStyle<FRAGID>">
   <color><HEXVALUE></color>
   </PolyStyle>
 </Style>
 #+END_EXAMPLE
+
+#+name: pprolog1
+#+BEGIN_EXAMPLE
+<Placemark><name><PLACEMARKNAME></name>
+  <styleUrl>#style<FRAGID></styleUrl>
+  <MultiGeometry><POLYGON>
+#+END_EXAMPLE
+
+#+name: ppost
+#+BEGIN_EXAMPLE
+</MultiGeometry></Placemark>
+#+END_EXAMPLE
+
+
+#+name: fpost
+#+BEGIN_EXAMPLE
+</Document>
+</kml>
+#+END_EXAMPLE
+
+
+#+name: fprolog2
+#+BEGIN_SRC python :var stylefrag=stylefrag :results output verbatim :cache yes
+  <<colorsub>>
+  <<fragsub>>
+
+  print fragsub(0, colorsub('0xffffff', stylefrag))
+#+END_SRC
+
 
 #+name: colorsub
 #+BEGIN_SRC python
@@ -336,28 +367,12 @@ find ${root} -name ${pat} | sed sX^\./XXg | sort -n
       return re.sub("<FRAGID>", sfrag, stylefrag)
 #+END_SRC
 
+colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 #+name: fprolog2
 #+BEGIN_SRC python :var stylefrag=stylefrag :results output verbatim :cache yes
-  <<colorsub>>
-  <<fragsub>>
-
-  print fragsub(0, colorsub('0xffffff', stylefrag))
+  import re
+  print re.sub("<FRAGID>", "0", re.sub("<HEXVALUE>", "0x900000dc", stylefrag))
 #+END_SRC
-
-#+RESULTS[76debd14a6d50c86e610eb00e30d338cc6b22d00]: fprolog2
-#+begin_example
-<Style id="style0">
-  <LineStyle id="lineStyle5">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle5">
-  <color>90ffffff</color>
-  </PolyStyle>
-</Style>
-
-#+end_example
-
 
 #+name: fprolog3
 #+BEGIN_SRC python :var colorbrewer=colorbrewer :var stylefrag=stylefrag :results output verbatim :cache yes
@@ -376,180 +391,18 @@ find ${root} -name ${pat} | sed sX^\./XXg | sort -n
 print fragsub("N", colorsub(0x0000dc, stylefrag))
 #+END_SRC
 
-#+RESULTS[301df50507c75a192ccb70aabf7f042f73a07997]: fprolog4
-#+begin_example
-<Style id="styleN">
-  <LineStyle id="lineStyle5">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle5">
-  <color>900000dc</color>
-  </PolyStyle>
-</Style>
-
-#+end_example
-
-colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
-#+name: fprolog2
-#+BEGIN_SRC python :var stylefrag=stylefrag :results output verbatim :cache yes
-  import re
-  print re.sub("<FRAGID>", "0", re.sub("<HEXVALUE>", "0x900000dc", stylefrag))
-#+END_SRC
-
 #+name: fprolog
 #+BEGIN_SRC python :var a=fprolog1 :var b=fprolog2 :var c=fprolog3 :cache yes :results output verbatim
   print a, b, c
 #+END_SRC
 
-#+end_example
-
-#+name: pprolog1
-#+BEGIN_EXAMPLE
-<Placemark><name><PLACEMARKNAME></name>
-  <styleUrl>#style<FRAGID></styleUrl>
-  <MultiGeometry>
-#+END_EXAMPLE
-
-#+name: ppost
-#+BEGIN_EXAMPLE
-</MultiGeometry></Placemark>
-#+END_EXAMPLE
 
 #+name: kmlfrags
 #+BEGIN_SRC python :var a=pprolog1 :var c=ppost  :results output verbatim :cache yes
 print a, c
 #+END_SRC
 
-#+RESULTS[fbf33b8f4fbd82f5966f7fad3dddc92bdae977a6]: kmlfrags
-: <Placemark><name><PLACEMARKNAME></name>
-:   <styleUrl>#style<FRAGID></styleUrl>
-:   <MultiGeometry>
-: </MultiGeometry></Placemark>
-: 
-
-#+name: fpost
-#+BEGIN_EXAMPLE
-</Document>
-</kml>
-#+END_EXAMPLE
-
 #+name: fcomplete
 #+BEGIN_SRC python :var fprolog=fprolog :var kmlfrags=kmlfrags :var fpost=fpost :results output verbatim
 print fprolog, kmlfrags, fpost
 #+END_SRC
-
-#+RESULTS: fcomplete
-#+begin_example
-<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://earth.google.com/kml/2.0">
-<Document><name><REPLACEME></name>
-<Style id="style0">
-  <LineStyle id="lineStyle5">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle5">
-  <color>0xffffff</color>
-  </PolyStyle>
-</Style>
-
-<Style id="style1">
-  <LineStyle id="lineStyle5">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle5">
-  <color>0xfff7fb</color>
-  </PolyStyle>
-</Style>
-
-<Style id="style2">
-  <LineStyle id="lineStyle5">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle5">
-  <color>0xece7f2</color>
-  </PolyStyle>
-</Style>
-
-<Style id="style3">
-  <LineStyle id="lineStyle5">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle5">
-  <color>0xd0d1e6</color>
-  </PolyStyle>
-</Style>
-
-<Style id="style4">
-  <LineStyle id="lineStyle5">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle5">
-  <color>0xa6bddb</color>
-  </PolyStyle>
-</Style>
-
-<Style id="style5">
-  <LineStyle id="lineStyle5">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle5">
-  <color>0x74a9cf</color>
-  </PolyStyle>
-</Style>
-
-<Style id="style6">
-  <LineStyle id="lineStyle5">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle5">
-  <color>0x3690c0</color>
-  </PolyStyle>
-</Style>
-
-<Style id="style7">
-  <LineStyle id="lineStyle5">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle5">
-  <color>0x0570b0</color>
-  </PolyStyle>
-</Style>
-
-<Style id="style8">
-  <LineStyle id="lineStyle5">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle5">
-  <color>0x045a8d</color>
-  </PolyStyle>
-</Style>
-
-<Style id="style9">
-  <LineStyle id="lineStyle5">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle5">
-  <color>0x023858</color>
-  </PolyStyle>
-</Style>
-
-
-<Placemark><name><PLACEMARKNAME></name>
-  <styleUrl>#style<FRAGID></styleUrl>
-  <MultiGeometry>
-</MultiGeometry></Placemark> </Document>
-</kml>
-
-#+end_example
-
