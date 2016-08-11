@@ -243,30 +243,30 @@ to the order in which layers are defined, probably all will be good.
 
 #+name: filelist
 #+BEGIN_SRC sh :var root="/Users/minshall/work/gis/play/IR/" :var pat="doc.kml"
-cd ${root}; find . -name ${pat} | sed sX^\./XXg | sort -n
+find ${root} -name ${pat} | sed sX^\./XXg | sort -n
 #+END_SRC
 
 #+RESULTS: filelist
-| 20160724_Soberanes_IR/doc.kml |
-| 20160725_Soberanes_IR/doc.kml |
-| 20160726_Soberanes_IR/doc.kml |
-| 20160727_Soberanes_IR/doc.kml |
-| 20160728_Soberanes_IR/doc.kml |
-| 20160729_Soberanes_IR/doc.kml |
-| 20160730_Soberanes_IR/doc.kml |
-| 20160731_Soberanes_IR/doc.kml |
-| 20160801_Soberanes_IR/doc.kml |
-| 20160802_Soberanes_IR/doc.kml |
-| 20160803_Soberanes_IR/doc.kml |
-| 20160804_Soberanes_IR/doc.kml |
-| 20160805_Soberanes_IR/doc.kml |
-| 20160806_Soberanes_IR/doc.kml |
-| 20160807_Soberanes_IR/doc.kml |
-| 20160808_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160724_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160725_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160726_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160727_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160728_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160729_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160730_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160731_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160801_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160802_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160803_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160804_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160805_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160806_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160807_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160808_Soberanes_IR/doc.kml |
 
 
 #+name: extract_line
-#+begin_src python :session py :var trigger="Heat Perimeter" :var select="Polygon" :var file="~/work/gis/play/IR/20160808_Soberanes_IR/doc.kml" :results output verbatim
+#+begin_src python
   def extract_line(file, trigger, select):
       """extract the first line matching SELECT that appears after the line matching TRIGGER"""
       import re
@@ -278,27 +278,78 @@ cd ${root}; find . -name ${pat} | sed sX^\./XXg | sort -n
                       return t;
 #+end_src
 
-#+BEGIN_SRC python :session py :var kmlfiles=filelist :results output verbatim
+#+BEGIN_SRC python :session py :var kmlfiles=filelist :var trigger="Heat Perimeter" :var select="Polygon" :results output verbatim
   <<extract_line>>
 
   import os
   kmls = []
-  print(kmlfiles)
   for file in kmlfiles:
-      print file
       kmls = kmls + [extract_line(os.path.expanduser(file[0]), trigger, select)]
 
-  print("okay")
+#+END_SRC
+
+#+name: test
+#+BEGIN_EXAMPLE
+this is
+a test
+of this which is sitting here
+#+END_EXAMPLE
+
+#+BEGIN_SRC python :var x=test :results output verbatim
+print x;
 #+END_SRC
 
 #+RESULTS:
+: this is
+: a test
+: of this which is sitting here
 : 
-: ... ... ... ... ... ... ... ... ... >>> >>> >>> [['20160724_Soberanes_IR/doc.kml'], ['20160725_Soberanes_IR/doc.kml'], ['20160726_Soberanes_IR/doc.kml'], ['20160727_Soberanes_IR/doc.kml'], ['20160728_Soberanes_IR/doc.kml'], ['20160729_Soberanes_IR/doc.kml'], ['20160730_Soberanes_IR/doc.kml'], ['20160731_Soberanes_IR/doc.kml'], ['20160801_Soberanes_IR/doc.kml'], ['20160802_Soberanes_IR/doc.kml'], ['20160803_Soberanes_IR/doc.kml'], ['20160804_Soberanes_IR/doc.kml'], ['20160805_Soberanes_IR/doc.kml'], ['20160806_Soberanes_IR/doc.kml'], ['20160807_Soberanes_IR/doc.kml'], ['20160808_Soberanes_IR/doc.kml']]
-: ... ... ... ['20160724_Soberanes_IR/doc.kml']
-: Traceback (most recent call last):
-:   File "<stdin>", line 3, in <module>
-:   File "<stdin>", line 4, in extract_line
-: IOError: [Errno 2] No such file or directory: '20160724_Soberanes_IR/doc.kml'
-: okay
 
+#+name: fprolog
+#+BEGIN_EXAMPLE
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.0">
+<Document><name><REPLACEME></name>
+#+END_EXAMPLE
 
+[[http://www.personal.psu.edu/cab38/ColorBrewer/ColorBrewer.html][Color Brewer]], 9-class sequential PuBu
+#+name: colorbrewer
+| 0xfff7fb |
+| 0xece7f2 |
+| 0xd0d1e6 |
+| 0xa6bddb |
+| 0x74a9cf |
+| 0x3690c0 |
+| 0x0570b0 |
+| 0x045a8d |
+| 0x023858 |
+
+#+name: stylefrag
+#+BEGIN_EXAMPLE
+<Style id="style5">
+  <LineStyle id="lineStyle5">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle5">
+  <color><REPLACEME></color>
+  </PolyStyle>
+</Style>
+#+END_EXAMPLE
+
+#+name: pprolog
+#+BEGIN_EXAMPLE
+<Placemark><name><REPLACEME></name>
+  <styleUrl>#style7</styleUrl>
+#+END_EXAMPLE
+
+#+name: ppost
+#+BEGIN_EXAMPLE
+</Placemark>
+#+END_EXAMPLE
+
+#+name: fpost
+#+BEGIN_EXAMPLE
+</Document>
+</kml>
+#+END_EXAMPLE
