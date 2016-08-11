@@ -305,7 +305,7 @@ print x;
 : of this which is sitting here
 : 
 
-#+name: fprolog
+#+name: fprolog1
 #+BEGIN_EXAMPLE
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://earth.google.com/kml/2.0">
@@ -318,44 +318,190 @@ print x;
 
 #+name: stylefrag
 #+BEGIN_EXAMPLE
-<Style id="style5">
+<Style id="style<FRAGID>">
   <LineStyle id="lineStyle5">
   <color>ff000000</color>
   <width>2</width>
   </LineStyle>
   <PolyStyle id="polyStyle5">
-  <color><REPLACEME></color>
+  <color><HEXVALUE></color>
   </PolyStyle>
 </Style>
 #+END_EXAMPLE
 
-#+name: pprolog
-#+BEGIN_EXAMPLE
-<Placemark><name><REPLACEME></name>
-  <styleUrl>#style7</styleUrl>
-#+END_EXAMPLE
-
-#+name: pprolog2
-#+BEGIN_SRC python :var colorbrewer=colorbrewer :var stylefrag=stylefrag :results output verbatim :cache yes
+#+name: fprolog2
+#+BEGIN_SRC python :var stylefrag=stylefrag :results output verbatim :cache yes
   import re
-
-  for color in colorbrewer[0]:
-      print re.sub("<REPLACEME>", color, stylefrag)
+  print re.sub("<FRAGID>", "0", re.sub("<HEXVALUE>", "0xffffff", stylefrag))
 #+END_SRC
 
-#+RESULTS[979dc199c141b60285c7c60998814f3c89470392]: pprolog2
+#+name: fprolog3
+#+BEGIN_SRC python :var colorbrewer=colorbrewer :var stylefrag=stylefrag :results output verbatim :cache yes
+   import re
 
+   for i in range(len(colorbrewer[0])):
+       print re.sub("<FRAGID>", str(i+1), re.sub("<HEXVALUE>", colorbrewer[0][i], stylefrag))
+#+END_SRC
 
+#+name: fprolog2
+#+BEGIN_SRC python :var stylefrag=stylefrag :results output verbatim :cache yes
+  import re
+  print re.sub("<FRAGID>", "0", re.sub("<HEXVALUE>", "0x900000dc", stylefrag))
+#+END_SRC
 
+#+name: fprolog
+#+BEGIN_SRC python :var a=fprolog1 :var b=fprolog2 :var c=fprolog3 :cache yes :results output verbatim
+  print a, b, c
+#+END_SRC
 
+#+end_example
+
+#+name: pprolog1
+#+BEGIN_EXAMPLE
+<Placemark><name><PLACEMARKNAME></name>
+  <styleUrl>#style<FRAGID></styleUrl>
+  <MultiGeometry>
+#+END_EXAMPLE
 
 #+name: ppost
 #+BEGIN_EXAMPLE
-</Placemark>
+</MultiGeometry></Placemark>
 #+END_EXAMPLE
+
+#+name: kmlfrags
+#+BEGIN_SRC python :var a=pprolog1 :var c=ppost  :results output verbatim :cache yes
+print a, c
+#+END_SRC
+
+#+RESULTS[fbf33b8f4fbd82f5966f7fad3dddc92bdae977a6]: kmlfrags
+: <Placemark><name><PLACEMARKNAME></name>
+:   <styleUrl>#style<FRAGID></styleUrl>
+:   <MultiGeometry>
+: </MultiGeometry></Placemark>
+: 
 
 #+name: fpost
 #+BEGIN_EXAMPLE
 </Document>
 </kml>
 #+END_EXAMPLE
+
+#+name: fcomplete
+#+BEGIN_SRC python :var fprolog=fprolog :var kmlfrags=kmlfrags :var fpost=fpost :results output verbatim
+print fprolog, kmlfrags, fpost
+#+END_SRC
+
+#+RESULTS: fcomplete
+#+begin_example
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.0">
+<Document><name><REPLACEME></name>
+<Style id="style0">
+  <LineStyle id="lineStyle5">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle5">
+  <color>0xffffff</color>
+  </PolyStyle>
+</Style>
+
+<Style id="style1">
+  <LineStyle id="lineStyle5">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle5">
+  <color>0xfff7fb</color>
+  </PolyStyle>
+</Style>
+
+<Style id="style2">
+  <LineStyle id="lineStyle5">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle5">
+  <color>0xece7f2</color>
+  </PolyStyle>
+</Style>
+
+<Style id="style3">
+  <LineStyle id="lineStyle5">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle5">
+  <color>0xd0d1e6</color>
+  </PolyStyle>
+</Style>
+
+<Style id="style4">
+  <LineStyle id="lineStyle5">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle5">
+  <color>0xa6bddb</color>
+  </PolyStyle>
+</Style>
+
+<Style id="style5">
+  <LineStyle id="lineStyle5">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle5">
+  <color>0x74a9cf</color>
+  </PolyStyle>
+</Style>
+
+<Style id="style6">
+  <LineStyle id="lineStyle5">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle5">
+  <color>0x3690c0</color>
+  </PolyStyle>
+</Style>
+
+<Style id="style7">
+  <LineStyle id="lineStyle5">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle5">
+  <color>0x0570b0</color>
+  </PolyStyle>
+</Style>
+
+<Style id="style8">
+  <LineStyle id="lineStyle5">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle5">
+  <color>0x045a8d</color>
+  </PolyStyle>
+</Style>
+
+<Style id="style9">
+  <LineStyle id="lineStyle5">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle5">
+  <color>0x023858</color>
+  </PolyStyle>
+</Style>
+
+
+<Placemark><name><PLACEMARKNAME></name>
+  <styleUrl>#style<FRAGID></styleUrl>
+  <MultiGeometry>
+</MultiGeometry></Placemark> </Document>
+</kml>
+
+#+end_example
+
