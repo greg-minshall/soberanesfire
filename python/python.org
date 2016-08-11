@@ -314,15 +314,7 @@ print x;
 
 [[http://www.personal.psu.edu/cab38/ColorBrewer/ColorBrewer.html][Color Brewer]], 9-class sequential PuBu
 #+name: colorbrewer
-| 0xfff7fb |
-| 0xece7f2 |
-| 0xd0d1e6 |
-| 0xa6bddb |
-| 0x74a9cf |
-| 0x3690c0 |
-| 0x0570b0 |
-| 0x045a8d |
-| 0x023858 |
+| 0xfff7fb | 0xece7f2 | 0xd0d1e6 | 0xa6bddb | 0x74a9cf | 0x3690c0 | 0x0570b0 | 0x045a8d | 0x023858 |
 
 #+name: stylefrag
 #+BEGIN_EXAMPLE
@@ -342,6 +334,20 @@ print x;
 <Placemark><name><REPLACEME></name>
   <styleUrl>#style7</styleUrl>
 #+END_EXAMPLE
+
+#+name: pprolog2
+#+BEGIN_SRC python :var colorbrewer=colorbrewer :var stylefrag=stylefrag :results output verbatim :cache yes
+  import re
+
+  for color in colorbrewer[0]:
+      print re.sub("<REPLACEME>", color, stylefrag)
+#+END_SRC
+
+#+RESULTS[979dc199c141b60285c7c60998814f3c89470392]: pprolog2
+
+
+
+
 
 #+name: ppost
 #+BEGIN_EXAMPLE
