@@ -288,22 +288,6 @@ find ${root} -name ${pat} | sed sX^\./XXg | sort -n
 
 #+END_SRC
 
-#+name: test
-#+BEGIN_EXAMPLE
-this is
-a test
-of this which is sitting here
-#+END_EXAMPLE
-
-#+BEGIN_SRC python :var x=test :results output verbatim
-print x;
-#+END_SRC
-
-#+RESULTS:
-: this is
-: a test
-: of this which is sitting here
-: 
 
 #+name: fprolog1
 #+BEGIN_EXAMPLE
