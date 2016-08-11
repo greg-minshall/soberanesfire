@@ -316,61 +316,9 @@ without worrying much about GIS APIs.
 
 colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 
-#+name: fprolog2
-#+BEGIN_SRC python :results verbatim
-  <<colorsub>>
-  <<fragsub>>
-
-  def fprolog2():
-      return fragsub(0, colorsub('0xffffff', stylefrag))
-#+END_SRC
-
-#+RESULTS: fprolog2
-
-
-#+name: fprolog3 :results none
-#+BEGIN_SRC python :var colorbrewer=colorbrewer :var stylefrag=stylefrag :results output verbatim :cache yes
-  <<colorsub>>
-  <<fragsub>>
-
-  def fprolog3():
-      result = ""
-      for i in range(len(colorbrewer[0])):
-          result = "{0}{1}".format(result,
-                                   fragsub(i+1,
-                                           colorsub(colorbrewer[0][i], stylefrag)))
-#+END_SRC
-
-#+name: fprolog4 :results none
-#+BEGIN_SRC python :var stylefrag=stylefrag :results output :cache yes
-  <<colorsub>>
-  <<fragsub>>
-
-  def fprolog4():
-      return fragsub("N", colorsub(0x0000dc, stylefrag))
-#+END_SRC
-
-
-#+name: fprolog
-#+BEGIN_SRC python :results none
-  <<fprolog1>>
-  <<fprolog2>>
-  <<fprolog3>>
-
-  def fprolog():
-      return "{0}\n{1}\n{2}\n{3}".format(fprolog1, fprolog2(), fprolog3(), fprolog4())
-#+END_SRC
-
-
-
-#+name: kmlfrags
-#+BEGIN_SRC python :results none
-  def kmlfrags():
-      return "{0}{1}".format(pprolog1, ppost)
-#+END_SRC
 
 #+name: fcomplete
-#+BEGIN_SRC python :results output verbatim
+#+BEGIN_SRC python :results output verbatim :tangle program.py
   fprolog1 = """<?xml version="1.0" encoding="UTF-8"?>
   <kml xmlns="http://earth.google.com/kml/2.0">
   <Document><name><REPLACEME></name>"""
@@ -399,11 +347,29 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
   fpost="""</Document>
   </kml>"""
 
-  <<fprolog>>
-  <<kmlfrags>>
-  <<fpost>>
+  <<colorsub>>
+  <<fragsub>>
 
-  print fprolog(), kmlfrags(), fpost()
+  def fprolog2():
+      return fragsub(0, colorsub('0xffffff', stylefrag))
+
+  def fprolog3():
+      result = ""
+      for i in range(len(colorbrewer)):
+          result = "{0}{1}".format(result,
+                                   fragsub(i+1,
+                                           colorsub(colorbrewer[i], stylefrag)))
+
+  def fprolog4():
+      return fragsub("N", colorsub(0x0000dc, stylefrag))
+
+  def fprolog():
+      return "{0}\n{1}\n{2}\n{3}".format(fprolog1, fprolog2(), fprolog3(), fprolog4())
+
+  def kmlfrags():
+      return "{0}{1}".format(pprolog1, ppost)
+
+  print fprolog(), kmlfrags(), fpost
 #+END_SRC
 
 #+RESULTS: fcomplete
