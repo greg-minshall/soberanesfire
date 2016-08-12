@@ -295,6 +295,7 @@ without worrying much about GIS APIs.
 #+BEGIN_SRC python
   def colorsub(hexvalue, stylefrag):
       import re
+      # http://stackoverflow.com/a/402704/1527747
       if type(hexvalue) is int:
           hvalue = hexvalue
       else:
@@ -306,7 +307,7 @@ without worrying much about GIS APIs.
 #+BEGIN_SRC python
   def fragsub(fragid, stylefrag):
       import re
-
+      # http://stackoverflow.com/a/402704/1527747
       if type(fragid) is int:
           sfrag = str(fragid)
       else:
@@ -319,6 +320,8 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 
 #+name: fcomplete
 #+BEGIN_SRC python :results output verbatim :tangle program.py
+  import sys
+
   fprolog1 = """<?xml version="1.0" encoding="UTF-8"?>
   <kml xmlns="http://earth.google.com/kml/2.0">
   <Document><name><REPLACEME></name>"""
@@ -359,6 +362,7 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
           result = "{0}{1}".format(result,
                                    fragsub(i+1,
                                            colorsub(colorbrewer[i], stylefrag)))
+      return result
 
   def fprolog4():
       return fragsub("N", colorsub(0x0000dc, stylefrag))
@@ -369,8 +373,10 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
   def kmlfrags():
       return "{0}{1}".format(pprolog1, ppost)
 
-  print fprolog(), kmlfrags(), fpost
-#+END_SRC
+  def main(argv):
+      print fprolog(), kmlfrags(), fpost
 
-#+RESULTS: fcomplete
+  if __name__ == "__main__":
+      main(sys.argv)
+#+END_SRC
 
