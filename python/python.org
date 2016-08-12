@@ -395,9 +395,12 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
       if kmls != []:
           nkmls = len(kmls)
           ncolors = len(colors)
-          i = iter(range(nkmls))
+          it = iter(range(nkmls))
           for kml in kmls:
-              result = result+re.sub("<FRAGID>", str(i.next()+1), pprolog1)
+              i = it.next()
+              print kmlfiles[i]
+              result = result+re.sub("<POLYGON>", kml, 
+                                     re.sub("<FRAGID>", str(i), pprolog1))
               # XXX insert actual data
               result = result+ppost
       result = result+re.sub("<FRAGID>", "N", pprolog1)
