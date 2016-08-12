@@ -398,7 +398,7 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 
 
   def kmlfrags():
-      kmls = extract_kmls(kmlfiles, trigger, select)
+      kmls = extract_kmls(list(reversed(kmlfiles)), trigger, select)
       kml0 = kmls[0]
       kmlN = kmls[len(kmls)-1]
       kmls = kmls[1:-1]           # get rid of first and last
