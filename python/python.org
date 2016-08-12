@@ -247,22 +247,25 @@ find ${root} -name ${pat} | sed sX^\./XXg | sort -n
 #+END_SRC
 
 #+RESULTS: filelist
-| /Users/minshall/work/gis/play/IR//20160724_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160725_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160726_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160727_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160728_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160729_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160730_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160731_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160801_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160802_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160803_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160804_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160805_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160806_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160807_Soberanes_IR/doc.kml |
-| /Users/minshall/work/gis/play/IR//20160808_Soberanes_IR/doc.kml |
+| /Users/minshall/work/gis/play/IR//20160724_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160725_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160726_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160727_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160728_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160729_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160730_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160731_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160801_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160802_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160803_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160804_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160805_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160806_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160807_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160808_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160809_Soberanes_IR/doc.kml                  |
+| /Users/minshall/work/gis/play/IR//20160810_c0930_Soberanes_Aircraft3/doc.kml     |
+| /Users/minshall/work/gis/play/IR//20160811_c0530_Soberanes_Aircraft3_All/doc.kml |
 
 
 #+name: extract_line
@@ -278,15 +281,19 @@ find ${root} -name ${pat} | sed sX^\./XXg | sort -n
                       return t;
 #+end_src
 
-#+BEGIN_SRC python :session py :var kmlfiles=filelist :var trigger="Heat Perimeter" :var select="Polygon" :results output verbatim
+#+name: extract_kmls
+#+BEGIN_SRC python
   <<extract_line>>
 
-  import os
-  kmls = []
-  for file in kmlfiles:
-      kmls = kmls + [extract_line(os.path.expanduser(file[0]), trigger, select)]
+  def extract_kmls(kmlfiles, trigger, select):
+      import os
+      kmls = []
+      for file in kmlfiles:
+          kmls = kmls + [extract_line(os.path.expanduser(file[0]), trigger, select)]
 
+      return kmls
 #+END_SRC
+
 
 okay, because of the IR doc.kml files' format, we can do all this
 without worrying much about GIS APIs.
@@ -319,8 +326,12 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 
 
 #+name: fcomplete
-#+BEGIN_SRC python :results output verbatim :tangle program.py
+#+BEGIN_SRC python :var kmlfiles=filelist :var trigger="Heat Perimeter" :var select="Polygon" :results output verbatim :tangle program.py
   import sys
+
+  <<colorsub>>
+  <<fragsub>>
+  <<extract_kmls>>
 
   fprolog1 = """<?xml version="1.0" encoding="UTF-8"?>
   <kml xmlns="http://earth.google.com/kml/2.0">
@@ -350,9 +361,6 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
   fpost="""</Document>
   </kml>"""
 
-  <<colorsub>>
-  <<fragsub>>
-
   def fprolog2():
       return fragsub(0, colorsub('0xffffff', stylefrag))
 
@@ -371,6 +379,7 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
       return "{0}\n{1}\n{2}\n{3}".format(fprolog1, fprolog2(), fprolog3(), fprolog4())
 
   def kmlfrags():
+      kmls = extract_kmls(kmlfiles, trigger, select)
       return "{0}{1}".format(pprolog1, ppost)
 
   def main(argv):
