@@ -289,7 +289,7 @@ find ${root} -name ${pat} | sed sX^\./XXg | sort -n
       import os
       kmls = []
       for file in kmlfiles:
-          kmls = kmls + [extract_line(os.path.expanduser(file[0]), trigger, select)]
+          kmls = kmls + [extract_line(os.path.expanduser(file), trigger, select)]
       return kmls
 #+END_SRC
 
@@ -324,8 +324,12 @@ without worrying much about GIS APIs.
 colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 
 
+--layername "Soberanes" --featurename "Heat Perimeter"
+
 #+name: fcomplete
-#+BEGIN_SRC python :var kmlfiles=filelist :var trigger="Heat Perimeter" :var select="Polygon" :results output verbatim :tangle program.py
+#+BEGIN_SRC python :tangle program.py
+  from __future__ import print_function # for eprint() below
+
   import sys
 
   <<colorsub>>
@@ -368,6 +372,11 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
   </kml>
   """
 
+  # from [[http://stackoverflow.com/a/14981125][stack exchange]]
+  def eprint(*args, **kwargs):
+      print(*args, file=sys.stderr, **kwargs)
+
+
   def fprolog2():
       return fragsub(0, colorsub(color0, stylefrag))
 
@@ -384,7 +393,7 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
   def fprolog():
       import re
 
-      return "{0}\n{1}\n{2}\n{3}".format(re.sub("<DOCNAME>", "Soberanes", fprolog1),
+      return "{0}\n{1}\n{2}\n{3}".format(re.sub("<DOCNAME>", layername, fprolog1),
                                          fprolog2(), fprolog3(), fprolog4())
 
   def labelit(label):
@@ -395,13 +404,16 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
   def kmlit(label, kml, fname):
       import re
       import math
+      import os.path
+
+      placemarkname = os.path.split(os.path.split(fname)[0])[1]
 
       if kml == None:
           return ""
       else:
           return re.sub("<POLYGON>", kml,
                         re.sub("<FRAGID>", str(label), 
-                               re.sub("<PLACEMARKNAME>", fname[0], pprolog1))) + ppost
+                               re.sub("<PLACEMARKNAME>", placemarkname, pprolog1))) + ppost
 
 
   def kmlfrags():
@@ -410,7 +422,7 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
       kmls = extract_kmls(kmlfiles, trigger, select)
       nkmls = len(kmls)
       labels = [0]
-      for i in range(1, len(kmls)-2):
+      for i in range(1, len(kmls)-1):
           labels = labels + [labelit(i)]
       labels = labels + ["N"]
       result = ""
@@ -423,12 +435,27 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
       return result
 
   def main(argv):
-      print fprolog(), kmlfrags(), fpost
+      import argparse
+
+      global layername, trigger, select, kmlfiles
+
+      cmd = argv[0]
+      parser = argparse.ArgumentParser(description="reduce a feature of a layer from a number of KML files to a single KML file")
+      parser.add_argument('-l', '--layername', type=str, required=True,
+                          help="name of desired layer (in file)")
+      parser.add_argument('-f', '--featurename', type=str, required=True,
+                          help="name of desired feature (within layer)")
+        # use "type=str" since we use the file name for ogr.Open()
+      parser.add_argument('kmlfiles', type=str, nargs="+")
+      args = parser.parse_args();
+      kmlfiles = args.kmlfiles
+      layername = args.layername
+      trigger = args.featurename
+      select = "Polygon"
+
+      print("{0}{1}{2}".format(fprolog(), kmlfrags(), fpost))
 
   if __name__ == "__main__":
       main(sys.argv)
-
-
-  #      kmls = extract_kmls(list(reversed(kmlfiles)), trigger, select)
 #+END_SRC
 
