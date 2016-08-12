@@ -335,7 +335,7 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 
   fprolog1 = """<?xml version="1.0" encoding="UTF-8"?>
   <kml xmlns="http://earth.google.com/kml/2.0">
-  <Document><name><REPLACEME></name>
+  <Document><name><DOCNAME></name>
   """
 
   color0 = 0xffffff
@@ -381,30 +381,37 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
       return fragsub("N", colorsub(colorN, stylefrag))
 
   def fprolog():
-      return "{0}\n{1}\n{2}\n{3}".format(fprolog1, fprolog2(), fprolog3(), fprolog4())
-
-  def kmlfrags():
       import re
 
+      return "{0}\n{1}\n{2}\n{3}".format(re.sub("<DOCNAME>", "Soberanes", fprolog1),
+                                         fprolog2(), fprolog3(), fprolog4())
+
+  def kmlit(label, kml, fname):
+      import re
+
+      if kml == None:
+          return ""
+      else:
+          return re.sub("<POLYGON>", kml,
+                        re.sub("<FRAGID>", str(label), 
+                        re.sub("<PLACEMARKNAME>", fname[0], pprolog1))) + ppost
+
+
+  def kmlfrags():
       kmls = extract_kmls(kmlfiles, trigger, select)
       kml0 = kmls[0]
       kmlN = kmls[len(kmls)-1]
       kmls = kmls[1:-1]           # get rid of first and last
-      result = re.sub("<FRAGID>", "0", pprolog1)
-      result = result+ppost
+      result = kmlit(0, kml0, kmlfiles[0])
       if kmls != []:
           nkmls = len(kmls)
           ncolors = len(colors)
           it = iter(range(nkmls))
           for kml in kmls:
               i = it.next()
-              print kmlfiles[i]
-              result = result+re.sub("<POLYGON>", kml, 
-                                     re.sub("<FRAGID>", str(i), pprolog1))
-              # XXX insert actual data
-              result = result+ppost
-      result = result+re.sub("<FRAGID>", "N", pprolog1)
-      result = result+ppost
+              if kml != None:
+                  result = result+kmlit(i, kml, kmlfiles[i])
+      result = result+kmlit("N", kmlN, kmlfiles[len(kmlfiles)-1])
       return result
 
   def main(argv):
