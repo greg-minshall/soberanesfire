@@ -347,19 +347,19 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
   nkmls = 0
 
   stylefrag="""<Style id="style<FRAGID>">
-    <LineStyle id="lineStyle<FRAGID>">
-    <color>ff000000</color>
-    <width>2</width>
-    </LineStyle>
-    <PolyStyle id="polyStyle<FRAGID>">
-    <color><HEXVALUE></color>
-    </PolyStyle>
+  <LineStyle id="lineStyle<FRAGID>">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle<FRAGID>">
+  <color><HEXVALUE></color>
+  </PolyStyle>
   </Style>
   """
 
   pprolog1="""<Placemark><name><PLACEMARKNAME></name>
-    <styleUrl>#style<FRAGID></styleUrl>
-    <MultiGeometry><POLYGON>"""
+  <styleUrl>#style<FRAGID></styleUrl>
+  <MultiGeometry><POLYGON>"""
 
   ppost="""</MultiGeometry></Placemark>
   """
@@ -387,6 +387,11 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
       return "{0}\n{1}\n{2}\n{3}".format(re.sub("<DOCNAME>", "Soberanes", fprolog1),
                                          fprolog2(), fprolog3(), fprolog4())
 
+  def labelit(label):
+      import math
+
+      return int(math.ceil((1.0*ncolors/nkmls)*label))
+
   def kmlit(label, kml, fname):
       import re
       import math
@@ -394,29 +399,27 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
       if kml == None:
           return ""
       else:
-          if type(label) is int and label != 0:
-              label = int(math.ceil((1.0*ncolors/nkmls)*label))
           return re.sub("<POLYGON>", kml,
                         re.sub("<FRAGID>", str(label), 
-                        re.sub("<PLACEMARKNAME>", fname[0], pprolog1))) + ppost
+                               re.sub("<PLACEMARKNAME>", fname[0], pprolog1))) + ppost
 
 
   def kmlfrags():
       global nkmls
 
-      kmls = extract_kmls(list(reversed(kmlfiles)), trigger, select)
-      kml0 = kmls[0]
-      kmlN = kmls[len(kmls)-1]
-      kmls = kmls[1:-1]           # get rid of first and last
+      kmls = extract_kmls(kmlfiles, trigger, select)
       nkmls = len(kmls)
-      result = kmlit(0, kml0, kmlfiles[0])
-      if kmls != []:
-          it = iter(range(nkmls))
-          for kml in kmls:
-              i = it.next()
-              if kml != None:
-                  result = result+kmlit(i, kml, kmlfiles[i])
-      result = result+kmlit("N", kmlN, kmlfiles[len(kmlfiles)-1])
+      labels = [0]
+      for i in range(1, len(kmls)-2):
+          labels = labels + [labelit(i)]
+      labels = labels + ["N"]
+      result = ""
+      # we run the list *backwards* so that newer (more expansive)
+      # layers hide under older layers, to show the growth day to day
+      for i in list(reversed(range(len(kmls)))):
+          kml = kmls[i]
+          if kml != None:
+              result = result+kmlit(labels[i], kml, kmlfiles[i])
       return result
 
   def main(argv):
@@ -424,5 +427,8 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 
   if __name__ == "__main__":
       main(sys.argv)
+
+
+  #      kmls = extract_kmls(list(reversed(kmlfiles)), trigger, select)
 #+END_SRC
 
