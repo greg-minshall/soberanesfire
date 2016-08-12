@@ -299,6 +299,13 @@ without worrying much about GIS APIs.
 
 #+name: colorsub
 #+BEGIN_SRC python
+  def rgbtokml(rgb):
+      r = (rgb/(256*256)) % 256
+      g = (rgb/256) % 256
+      b = rgb % 256
+      bgr = (b*256*256)+(g*256)+(r)
+      return bgr
+
   def colorsub(hexvalue, stylefrag):
       import re
       # http://stackoverflow.com/a/402704/1527747
@@ -306,7 +313,8 @@ without worrying much about GIS APIs.
           hvalue = hexvalue
       else:
           hvalue = int(hexvalue, base=16)
-      return re.sub("<HEXVALUE>", "{0:x}".format(0x90000000 | hvalue), stylefrag)
+      return re.sub("<HEXVALUE>", "{0:x}".format(0x90000000 | rgbtokml(hvalue)),
+                    stylefrag)
 #+END_SRC
 
 #+name: fragsub
@@ -347,7 +355,7 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
   colors = [0xfff7fb, 0xece7f2, 0xd0d1e6, 0xa6bddb, 0x74a9cf,
             0x3690c0, 0x0570b0, 0x045a8d, 0x023858]
   ncolors = len(colors)
-  colorN = 0x0000dc
+  colorN = 0xdc0000
   nkmls = 0
 
   stylefrag="""<Style id="style<FRAGID>">
