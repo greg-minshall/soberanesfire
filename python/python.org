@@ -335,12 +335,15 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 
   fprolog1 = """<?xml version="1.0" encoding="UTF-8"?>
   <kml xmlns="http://earth.google.com/kml/2.0">
-  <Document><name><REPLACEME></name>"""
+  <Document><name><REPLACEME></name>
+  """
 
+  color0 = 0xffffff
   # from http://www.personal.psu.edu/cab38/ColorBrewer/ColorBrewer.html
   # 9-class sequential PuBu
-  colorbrewer= [0xfff7fb, 0xece7f2, 0xd0d1e6, 0xa6bddb, 0x74a9cf,
+  colors= [0xfff7fb, 0xece7f2, 0xd0d1e6, 0xa6bddb, 0x74a9cf,
                 0x3690c0, 0x0570b0, 0x045a8d, 0x023858]
+  colorN = 0x0000dc
 
   stylefrag="""<Style id="style<FRAGID>">
     <LineStyle id="lineStyle<FRAGID>">
@@ -350,37 +353,56 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
     <PolyStyle id="polyStyle<FRAGID>">
     <color><HEXVALUE></color>
     </PolyStyle>
-  </Style>"""
+  </Style>
+  """
 
   pprolog1="""<Placemark><name><PLACEMARKNAME></name>
     <styleUrl>#style<FRAGID></styleUrl>
     <MultiGeometry><POLYGON>"""
 
-  ppost="""</MultiGeometry></Placemark>"""
+  ppost="""</MultiGeometry></Placemark>
+  """
 
   fpost="""</Document>
-  </kml>"""
+  </kml>
+  """
 
   def fprolog2():
-      return fragsub(0, colorsub('0xffffff', stylefrag))
+      return fragsub(0, colorsub(color0, stylefrag))
 
   def fprolog3():
       result = ""
-      for i in range(len(colorbrewer)):
+      for i in range(len(colors)):
           result = "{0}{1}".format(result,
-                                   fragsub(i+1,
-                                           colorsub(colorbrewer[i], stylefrag)))
+                                   fragsub(i+1, colorsub(colors[i], stylefrag)))
       return result
 
   def fprolog4():
-      return fragsub("N", colorsub(0x0000dc, stylefrag))
+      return fragsub("N", colorsub(colorN, stylefrag))
 
   def fprolog():
       return "{0}\n{1}\n{2}\n{3}".format(fprolog1, fprolog2(), fprolog3(), fprolog4())
 
   def kmlfrags():
+      import re
+
       kmls = extract_kmls(kmlfiles, trigger, select)
-      return "{0}{1}".format(pprolog1, ppost)
+      kml0 = kmls[0]
+      kmlN = kmls[len(kmls)-1]
+      kmls = kmls[1:-1]           # get rid of first and last
+      result = re.sub("<FRAGID>", "0", pprolog1)
+      result = result+ppost
+      if kmls != []:
+          nkmls = len(kmls)
+          ncolors = len(colors)
+          i = iter(range(nkmls))
+          for kml in kmls:
+              result = result+re.sub("<FRAGID>", str(i.next()+1), pprolog1)
+              # XXX insert actual data
+              result = result+ppost
+      result = result+re.sub("<FRAGID>", "N", pprolog1)
+      result = result+ppost
+      return result
 
   def main(argv):
       print fprolog(), kmlfrags(), fpost
