@@ -474,10 +474,16 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 it [[http://stackoverflow.com/a/1912483/1527747][seems like]] [[https://docs.python.org/2.7/library/xml.etree.elementtree.html][Element Tree]] is the way to parse.
 
 #+BEGIN_SRC python :var input="/Users/minshall/work/gis/play/IR/20160809_Soberanes_IR/doc.kml" :results output verbatim
-import xml.etree.ElementTree as et
-tree = et.parse(input)
-root = tree.getroot()
+  import xml.etree.ElementTree as et
+  tree = et.parse(input)
+  root = tree.getroot()
 
+  # set up namespace
+  ns = { "kml2.2": "http://www.opengis.net/kml/2.2" }
+
+  doc = root.find("kml2.2:Document", ns)
+
+  places = doc.findall("kml2.2:Placemark", ns)
 #+END_SRC
 
 **** [[https://github.com/stchris/untangle][untangle]]
