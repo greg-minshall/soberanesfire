@@ -490,6 +490,11 @@ it [[http://stackoverflow.com/a/1912483/1527747][seems like]] [[https://docs.pyt
   # https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions
   hperil = [i for i in places if
             i.find("kml2.2:name", ns).text == "Heat Perimeter"]
+
+  mg = hperil[0].find("kml2.2:MultiGeometry", ns)
+
+  str = et.tostring(mg)
+  print len(str)
 #+END_SRC
 
 **** [[https://github.com/stchris/untangle][untangle]]
