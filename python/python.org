@@ -467,3 +467,35 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
       main(sys.argv)
 #+END_SRC
 
+*** parsing as an xml document
+
+**** [[https://docs.python.org/2.7/library/xml.etree.elementtree.html][Element Tree]]
+
+it [[http://stackoverflow.com/a/1912483/1527747][seems like]] [[https://docs.python.org/2.7/library/xml.etree.elementtree.html][Element Tree]] is the way to parse.
+
+#+BEGIN_SRC python :var input="/Users/minshall/work/gis/play/IR/20160809_Soberanes_IR/doc.kml" :results output verbatim
+import xml.etree.ElementTree as et
+tree = et.parse(input)
+root = tree.getroot()
+
+#+END_SRC
+
+**** [[https://github.com/stchris/untangle][untangle]]
+but, [[https://github.com/stchris/untangle][untangle]] seems also nice.  so...
+#+BEGIN_EXAMPLE
+sudo pip install untangle
+#+END_EXAMPLE
+to install it
+
+#+BEGIN_SRC python :var input="/Users/minshall/work/gis/play/IR/20160809_Soberanes_IR/doc.kml" :results output verbatim
+import untangle
+
+kml = untangle.parse(input)
+
+for i in kml.Document:
+  print i
+
+#+END_SRC
+
+i'm not sure, though, how to get the raw contents of a subtree.  also,
+i don't seem to actually see the Polygon objects under MultiGeometry.
