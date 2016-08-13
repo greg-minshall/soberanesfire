@@ -473,17 +473,23 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 
 it [[http://stackoverflow.com/a/1912483/1527747][seems like]] [[https://docs.python.org/2.7/library/xml.etree.elementtree.html][Element Tree]] is the way to parse.
 
-#+BEGIN_SRC python :var input="/Users/minshall/work/gis/play/IR/20160809_Soberanes_IR/doc.kml" :results output verbatim
+#+BEGIN_SRC python :var input="/Users/minshall/work/gis/play/IR/20160729_Soberanes_IR/doc.kml" :results output verbatim
   import xml.etree.ElementTree as et
-  tree = et.parse(input)
-  root = tree.getroot()
 
   # set up namespace
   ns = { "kml2.2": "http://www.opengis.net/kml/2.2" }
 
+  tree = et.parse(input)
+  root = tree.getroot()
+
   doc = root.find("kml2.2:Document", ns)
 
   places = doc.findall("kml2.2:Placemark", ns)
+
+  # list comprehensions
+  # https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions
+  hperil = [i for i in places if
+            i.find("kml2.2:name", ns).text == "Heat Perimeter"]
 #+END_SRC
 
 **** [[https://github.com/stchris/untangle][untangle]]
@@ -493,15 +499,17 @@ sudo pip install untangle
 #+END_EXAMPLE
 to install it
 
-#+BEGIN_SRC python :var input="/Users/minshall/work/gis/play/IR/20160809_Soberanes_IR/doc.kml" :results output verbatim
+#+BEGIN_SRC python :var input="/Users/minshall/work/gis/play/IR/20160729_Soberanes_IR/doc.kml" :results output verbatim
+import os.path
 import untangle
 
-kml = untangle.parse(input)
+kml = untangle.parse(os.path.expanduser(input))
 
-for i in kml.Document:
+for i in kml.kml.Document:
   print i
 
 #+END_SRC
 
-i'm not sure, though, how to get the raw contents of a subtree.  also,
-i don't seem to actually see the Polygon objects under MultiGeometry.
+#+RESULTS:
+
+i'm not sure, though, how to get the raw contents of a subtree.
