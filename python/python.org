@@ -552,29 +552,34 @@ complicated?
 **** [[https://pypi.python.org/pypi/lxml/3.6.1][lxml]]
 
 #+BEGIN_SRC python :results output verbatim
-from lxml import etree
+  from lxml import etree
 
-# namespace
-ns = {"kml2.2": "http://www.opengis.net/kml/2.2"}
+  # namespace
+  ns = {"kml2.2": "http://www.opengis.net/kml/2.2"}
 
-input="/Users/minshall/work/gis/play/IR/20160729_Soberanes_IR/doc.kml" 
+  input= ["/Users/minshall/work/gis/play/IR/20160729_Soberanes_IR/doc.kml",
+          "/Users/minshall/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml"]
+  search = ['//kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"]',
+            '//kml2.2:MultiGeometry[../../kml2.2:name="Fire Perimeter"]']
 
-tree = etree.parse(input)
+  which = 1
 
-# absolute location
-tree.xpath('/kml2.2:kml/kml2.2:Document', namespaces=ns)
+  tree = etree.parse(input[which])
 
-# searching!
-tree.xpath('//kml2.2:Placemark', namespaces=ns)
+  # absolute location
+  tree.xpath('/kml2.2:kml/kml2.2:Document', namespaces=ns)
 
-# more searching
-print tree.xpath('//kml2.2:Placemark[kml2.2:name="Heat Perimeter"]', namespaces=ns)
-print tree.xpath('//kml2.2:Placemark[kml2.2:name="Heat Perimeter"]/kml2.2:MultiGeometry', namespaces=ns)
-print tree.xpath('//kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"]', namespaces=ns)
+  # searching!
+  tree.xpath('//kml2.2:Placemark', namespaces=ns)
+
+  # more searching
+  tree.xpath('//kml2.2:Placemark[kml2.2:name="Heat Perimeter"]', namespaces=ns)
+  tree.xpath('//kml2.2:Placemark[kml2.2:name="Heat Perimeter"]/kml2.2:MultiGeometry', namespaces=ns)
+
+  print len(tree.xpath(search[0], namespaces=ns) +
+            tree.xpath(search[1], namespaces=ns))
 #+END_SRC
 
 #+RESULTS:
-: [<Element {http://www.opengis.net/kml/2.2}Placemark at 0x10811b440>]
-: [<Element {http://www.opengis.net/kml/2.2}MultiGeometry at 0x10811b440>]
-: [<Element {http://www.opengis.net/kml/2.2}MultiGeometry at 0x10811b440>]
+: 9
 
