@@ -545,3 +545,34 @@ this is nice.  but, really, probably need xpath expression support, in
 order to allow user to specify the place(s) in the tree to pull out
 the multigeometries.
 
+**** [[https://docs.python.org/3/library/xml.dom.html][xml.dom]]
+
+complicated?
+
+**** [[https://pypi.python.org/pypi/lxml/3.6.1][lxml]]
+
+#+BEGIN_SRC python :results output verbatim
+from lxml import etree
+
+# namespace
+ns = {"kml2.2": "http://www.opengis.net/kml/2.2"}
+
+input="/Users/minshall/work/gis/play/IR/20160729_Soberanes_IR/doc.kml" 
+
+tree = etree.parse(input)
+
+# absolute location
+tree.xpath('/kml2.2:kml/kml2.2:Document', namespaces=ns)
+
+# searching!
+tree.xpath('//kml2.2:Placemark', namespaces=ns)
+
+# more searching
+print tree.xpath('//kml2.2:Placemark[kml2.2:name="Heat Perimeter"]', namespaces=ns)
+print tree.xpath('//kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"]', namespaces=ns)[0]
+#+END_SRC
+
+#+RESULTS:
+: [<Element {http://www.opengis.net/kml/2.2}Placemark at 0x10e6ae440>]
+: <Element {http://www.opengis.net/kml/2.2}MultiGeometry at 0x10e6ae440>
+
