@@ -454,14 +454,12 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
   <<eprint>>                      # must be first
   import sys
 
+  <<file_fragments>>
+
   <<colorsub>>
   <<fragsub>>
   <<extract_kmls>>
-
-  <<file_fragments>>
-
   <<fprolog>>
-
   <<kmlfrags>>
 
   def main(argv):
