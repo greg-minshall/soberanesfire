@@ -278,37 +278,6 @@ eprint: print to stderr.  must be *first* line in file
       print(*args, file=sys.stderr, **kwargs)
 #+END_SRC
 
-
-#+name: extract_line
-#+begin_src python
-  def extract_line(file, trigger, select):
-      """extract the first line matching SELECT that appears after the line matching TRIGGER"""
-      import re
-      f = open(file, 'r');
-      for t in f:
-          if (re.search(trigger, t)):
-              for t in f:
-                  if (re.search(select, t)):
-                      return t;
-#+end_src
-
-#+name: extract_kmls
-#+BEGIN_SRC python
-  <<extract_line>>
-
-  def extract_kmls(kmlfiles, trigger, select):
-      import os
-      kmls = []
-      for file in kmlfiles:
-          kmls = kmls + [extract_line(os.path.expanduser(file), trigger, select)]
-      return kmls
-#+END_SRC
-
-
-okay, because of the IR doc.kml files' format, we can do all this
-without worrying much about GIS APIs.  unfortunately, when a new plane
-was put into service, the new file formats didn't work for this.
-
 #+name: colorsub
 #+BEGIN_SRC python
   def rgbtokml(rgb):
@@ -388,7 +357,7 @@ was put into service, the new file formats didn't work for this.
   def kmlfrags():
       global nkmls
 
-      kmls = extract_kmls(kmlfiles, trigger, select)
+      kmls = extract_kmls()
       nkmls = len(kmls)
       labels = [0]
       for i in range(1, len(kmls)-1):
@@ -449,8 +418,12 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 
 --layername "Soberanes" --featurename "Heat Perimeter"
 
-#+name: fcomplete
-#+BEGIN_SRC python :tangle program.py
+okay, because of the IR doc.kml files' format, we can do all this
+without worrying much about GIS APIs, basically, it could be an awk
+script.  unfortunately, when a new plane was put into service, the new
+file formats didn't work for this.
+
+#+BEGIN_SRC python :tangle awklike.py
   <<eprint>>                      # must be first
   import sys
 
@@ -462,10 +435,29 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
   <<fprolog>>
   <<kmlfrags>>
 
+  def extract_line(file, trigger, select):
+      """extract the first line matching SELECT that appears after the
+  line matching TRIGGER"""
+      import re
+      f = open(file, 'r');
+      for t in f:
+          if (re.search(trigger, t)):
+              for t in f:
+                  if (re.search(select, t)):
+                      return t;
+
+  def extract_kmls():
+      import os
+      kmls = []
+      for file in kmlfiles:
+          kmls = kmls + [extract_line(os.path.expanduser(file), featurename, select)]
+      return kmls
+
+
   def main(argv):
       import argparse
 
-      global layername, trigger, select, kmlfiles
+      global layername, featurename, select, kmlfiles
 
       cmd = argv[0]
       parser = argparse.ArgumentParser(description="reduce a feature of a layer from a number of KML files to a single KML file")
@@ -478,7 +470,7 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
       args = parser.parse_args();
       kmlfiles = args.kmlfiles
       layername = args.layername
-      trigger = args.featurename
+      featurename = args.featurename
       select = "Polygon"
 
       print("{0}{1}{2}".format(fprolog(), kmlfrags(), fpost))
@@ -582,33 +574,66 @@ xml2 < ~/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml | less
 
 a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/xpath_syntax.asp][w3schools]]
 
-#+BEGIN_SRC python :results output verbatim
+#+BEGIN_SRC python :tangle xpathusing.py :results output verbatim
+  <<eprint>>                      # must be first
+  import sys
 
-  def extract_kmls(kmlfiles, search, namespaces):
+  <<file_fragments>>
+
+  <<colorsub>>
+  <<fragsub>>
+  <<fprolog>>
+  <<kmlfrags>>
+
+  def extract_kmls():
         import os
         from lxml import etree
 
         kmls = []
         for file in kmlfiles:
             tree = etree.parse(file)
-            kmls = kmls + [etree.tostring(tree.xpath(search,
-                                                     namespaces=namespaces)[0])]
+            kmls = kmls + [etree.tostring(tree.xpath(expr, namespaces=nspace)[0])]
         return kmls
 
-  # namespace
-  ns = {"kml2.2": "http://www.opengis.net/kml/2.2"}
 
-  input = ["/Users/minshall/work/gis/play/IR/20160729_Soberanes_IR/doc.kml",
-           "/Users/minshall/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml"]
+  def main(argv):
+      import argparse
 
-  search = """//kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"] |
-           //kml2.2:MultiGeometry[../../kml2.2:name="Fire Perimeter"]"""
+      global layername, nspace, expr, kmlfiles
 
-  kmls = extract_kmls(input, search, ns)
-  print len(kmls[1])
+      # namespace
+      def_nsabbrev = "kml2.2"
+      def_nslong = "http://www.opengis.net/kml/2.2"
+      def_ns = { def_nsabbrev : def_nslong }
+
+      def_expr = '//kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"] | //kml2.2:MultiGeometry[../../kml2.2:name="Fire Perimeter"]'
+
+      # XXX
+      def_input = ["/Users/minshall/work/gis/play/IR/20160729_Soberanes_IR/doc.kml",
+                   "/Users/minshall/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml"]
+
+      cmd = argv[0]
+      parser = argparse.ArgumentParser(description="take a number of geometry features from a group of kml files and produce one kml file")
+      parser.add_argument('--nsabbrev', type=str, default=def_nsabbrev,
+                          help='abbreviation for namespace (default: "{0}")'.format(def_nsabbrev))
+      parser.add_argument('--nslong', type=str, default=def_nslong,
+                          help='long name for namespace (default: "{0}")'.format(def_nslong))
+      parser.add_argument('-e', '--expr', type=str, default=def_expr,
+                          help='xpat expression (default is "{0}")'.format(def_expr))
+      parser.add_argument('-l', '--layername', type=str, default="Soberanes",
+                          help='name of desired layer (output file, default "Soberanes")')
+
+      # use "type=str" since we use the file name for ogr.Open()
+      parser.add_argument('kmlfiles', type=str, nargs="?", default=def_input)
+      args = parser.parse_args();
+      kmlfiles = args.kmlfiles
+      nspace = "{{{0}:{1}}}".format(args.nsabbrev, args.nslong)
+      layername = args.layername
+      expr = args.expr
+
+      print("{0}{1}{2}".format(fprolog(), kmlfrags(), fpost))
+
+  if __name__ == "__main__":
+      main(sys.argv)
 
 #+END_SRC
-
-#+RESULTS:
-: 1526
-
