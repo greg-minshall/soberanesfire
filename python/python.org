@@ -559,8 +559,8 @@ complicated?
 
   input= ["/Users/minshall/work/gis/play/IR/20160729_Soberanes_IR/doc.kml",
           "/Users/minshall/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml"]
-  search = ['//kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"]',
-            '//kml2.2:MultiGeometry[../../kml2.2:name="Fire Perimeter"]']
+  search = """//kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"] |
+           //kml2.2:MultiGeometry[../../kml2.2:name="Fire Perimeter"]"""
 
   which = 1
 
@@ -576,8 +576,8 @@ complicated?
   tree.xpath('//kml2.2:Placemark[kml2.2:name="Heat Perimeter"]', namespaces=ns)
   tree.xpath('//kml2.2:Placemark[kml2.2:name="Heat Perimeter"]/kml2.2:MultiGeometry', namespaces=ns)
 
-  print len(tree.xpath(search[0], namespaces=ns) +
-            tree.xpath(search[1], namespaces=ns))
+  print len(tree.xpath(search, namespaces=ns))
+
 #+END_SRC
 
 #+RESULTS:
