@@ -1,6 +1,18 @@
 * using python for gis things
 
+lots of code in this file hasn't really been developed.
+extractwkt.py, awklike.py, and xpathusing.py are function (and the
+last is what we are currently using).
+
 #+property: header-args :noweb yes
+
+** caution
+
+#+name: caution
+#+BEGIN_SRC python
+"""WARNING: THIS FILE IS PRODUCED BY python.org.  ANY CHANGES MADE HERE
+WILL LIKELY BE LOST.  DO NOT MODIFY THIS FILE; RATHER, MODIFY python.org."""
+#+END_SRC
 
 ** using [[https://pypi.python.org/pypi/Shapely][shapely]]
 
@@ -28,23 +40,35 @@ print y2
 
 then, export it somehow in kml format.
 
+[[http://deparkes.co.uk/2015/03/11/how-to-plot-polygons-in-python/][viewing polygons in python]]
+
+#+BEGIN_SRC python :results output
+import shapely
+import shapely.geometry
+
+a = shapely.geometry.Point(1, 1).buffer(1.5)
+b = shapely.geometry.Point(2,2).buffer(1.5)
+c = a.difference(b)
+print c
+#+END_SRC
+
+#+RESULTS:
+: POLYGON ((2.435413811199113 0.5645861888008871, 2.435410503598313 0.5645729841183068, 2.38581929876693 0.4259748514523659, 2.322881896522533 0.2929048947610042, 2.247204418453818 0.1666446504705974, 2.159515680044106 0.04841007375453255, 2.060660171779822 -0.06066017177982053, 1.951589926245469 -0.1595156800441044, 1.833355349529405 -0.2472044184538169, 1.707095105238998 -0.3228818965225317, 1.574025148547636 -0.3858192987669296, 1.435427015881695 -0.4354105035983127, 1.292635483024194 -0.4711779206048452, 1.147025710494343 -0.4927770900082951, 1.000000000000002 -0.5, 0.8529742895056617 -0.4927770900082955, 0.7073645169758103 -0.4711779206048461, 0.5645729841183093 -0.4354105035983142, 0.4259748514523682 -0.3858192987669313, 0.2929048947610065 -0.3228818965225342, 0.1666446504705994 -0.2472044184538196, 0.0484100737545341 -0.1595156800441073, -0.06066017177981919 -0.06066017177982341, -0.1595156800441035 0.04841007375452977, -0.2472044184538165 0.1666446504705945, -0.3228818965225315 0.2929048947610015, -0.3858192987669293 0.4259748514523634, -0.4354105035983127 0.5645729841183046, -0.4711779206048452 0.7073645169758058, -0.4927770900082953 0.8529742895056575, -0.5 0.9999999999999984, -0.4927770900082953 1.14702571049434, -0.4711779206048461 1.292635483024191, -0.4354105035983136 1.435427015881693, -0.3858192987669304 1.574025148547634, -0.3228818965225329 1.707095105238996, -0.2472044184538182 1.833355349529403, -0.1595156800441058 1.951589926245468, -0.06066017177982141 2.060660171779821, 0.0484100737545311 2.159515680044105, 0.1666446504705956 2.247204418453817, 0.292904894761002 2.322881896522532, 0.4259748514523632 2.385819298766929, 0.5645729841183038 2.435410503598312, 0.5645861888008867 2.435413811199113, 0.5288220793951539 2.292635483024191, 0.5072229099917047 2.14702571049434, 0.5 1.999999999999998, 0.5072229099917047 1.852974289505657, 0.5288220793951548 1.707364516975806, 0.5645894964016873 1.564572984118305, 0.6141807012330707 1.425974851452363, 0.6771181034774685 1.292904894761001, 0.7527955815461835 1.166644650470595, 0.8404843199558965 1.04841007375453, 0.9393398282201808 0.9393398282201766, 1.048410073754534 0.8404843199558927, 1.166644650470599 0.7527955815461804, 1.292904894761006 0.6771181034774658, 1.425974851452368 0.6141807012330687, 1.564572984118309 0.5645894964016858, 1.70736451697581 0.5288220793951539, 1.852974289505662 0.5072229099917045, 2.000000000000002 0.5, 2.147025710494343 0.5072229099917049, 2.292635483024195 0.5288220793951548, 2.435413811199113 0.5645861888008871))
+
 ** using osgeo
 
 [[https://pcjericks.github.io/py-gdalogr-cookbook/geometry.html][nice cookbook]]
 
 #+BEGIN_SRC python :results output
-from osgeo import ogr
+  from osgeo import ogr
 
-wkt = open("20160806_Soberanes_IR_heat_perimeter.wkt", "r").read()
-pgons = ogr.CreateGeometryFromWkt(wkt)
+  wkt = open("20160806_Soberanes_IR_heat_perimeter.wkt", "r").read()
+  pgons = ogr.CreateGeometryFromWkt(wkt)
 
-kml = pgons.ExportToKML()
-print kml
+  kml = pgons.ExportToKML()
+  print kml
 
 #+END_SRC
-
-#+RESULTS:
-
 
 ** total flow?
 
@@ -83,10 +107,13 @@ print kml
 #+RESULTS:
 : None
 
+** extractwkt.py
+
 this prints the wkt of a layer/feature of a kml file
 
-#+name: extractwkt.py
 #+BEGIN_SRC python :tangle extractwkt.py
+  <<caution>>
+
   from __future__ import print_function # for eprint() below
 
   import argparse
@@ -116,7 +143,8 @@ this prints the wkt of a layer/feature of a kml file
 
   def main(argv):
       cmd = argv[0]
-      parser = argparse.ArgumentParser(description="extract the well-known text (wkt) of a feature of a layer in a file")
+      parser = argparse.ArgumentParser(description="""extract the well-known text (wkt) of a feature of a layer in a file.  example usage:
+      `python extractwkt.py -l Soberanes -f "Heat Perimeter" ~/work/gis/play/IR/20160729_Soberanes_IR/doc.kml\'""")
       parser.add_argument('-l', '--layername', type=str, required=True,
                           help="name of desired layer (in file)")
       parser.add_argument('-f', '--featurename', type=str, required=True,
@@ -169,10 +197,11 @@ this prints the wkt of a layer/feature of a kml file
       main(sys.argv)
 #+END_SRC
 
-#+RESULTS:
+** differencewkt.py
 
-#+name: differencewkt
 #+BEGIN_SRC python :tangle differencewkt.py
+  <<caution>>
+
   from __future__ import print_function # for eprint() below
 
   import argparse
@@ -222,20 +251,7 @@ this prints the wkt of a layer/feature of a kml file
       main(sys.argv)
 #+END_SRC
 
-try to figure out what's going on
-
-#+BEGIN_SRC python :results output
-import shapely
-import shapely.geometry
-
-a = shapely.geometry.Point(1, 1).buffer(1.5)
-b = shapely.geometry.Point(2,2).buffer(1.5)
-c = a.difference(b)
-c
-#+END_SRC
-
-#+RESULTS:
-
+** awklike.py
 now, it turns out (see gis.org) that the exact way the IR data is
 give, we can forget all about any of the GIS tools, and extract the
 desired KML-bits with awk.  then, assuming Google Earth pays attention
