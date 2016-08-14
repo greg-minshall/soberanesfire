@@ -569,10 +569,12 @@ tree.xpath('//kml2.2:Placemark', namespaces=ns)
 
 # more searching
 print tree.xpath('//kml2.2:Placemark[kml2.2:name="Heat Perimeter"]', namespaces=ns)
-print tree.xpath('//kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"]', namespaces=ns)[0]
+print tree.xpath('//kml2.2:Placemark[kml2.2:name="Heat Perimeter"]/kml2.2:MultiGeometry', namespaces=ns)
+print tree.xpath('//kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"]', namespaces=ns)
 #+END_SRC
 
 #+RESULTS:
-: [<Element {http://www.opengis.net/kml/2.2}Placemark at 0x10e6ae440>]
-: <Element {http://www.opengis.net/kml/2.2}MultiGeometry at 0x10e6ae440>
+: [<Element {http://www.opengis.net/kml/2.2}Placemark at 0x10811b440>]
+: [<Element {http://www.opengis.net/kml/2.2}MultiGeometry at 0x10811b440>]
+: [<Element {http://www.opengis.net/kml/2.2}MultiGeometry at 0x10811b440>]
 
