@@ -267,6 +267,17 @@ find ${root} -name ${pat} | sed sX^\./XXg | sort -n
 | /Users/minshall/work/gis/play/IR//20160810_c0930_Soberanes_Aircraft3/doc.kml     |
 | /Users/minshall/work/gis/play/IR//20160811_c0530_Soberanes_Aircraft3_All/doc.kml |
 
+eprint: print to stderr.  must be *first* line in file
+
+#+name: eprint
+#+BEGIN_SRC python
+  # from [[http://stackoverflow.com/a/14981125][stack exchange]]
+  from __future__ import print_function # for eprint() below
+
+  def eprint(*args, **kwargs):
+      print(*args, file=sys.stderr, **kwargs)
+#+END_SRC
+
 
 #+name: extract_line
 #+begin_src python
@@ -295,7 +306,8 @@ find ${root} -name ${pat} | sed sX^\./XXg | sort -n
 
 
 okay, because of the IR doc.kml files' format, we can do all this
-without worrying much about GIS APIs.
+without worrying much about GIS APIs.  unfortunately, when a new plane
+was put into service, the new file formats didn't work for this.
 
 #+name: colorsub
 #+BEGIN_SRC python
@@ -329,62 +341,8 @@ without worrying much about GIS APIs.
       return re.sub("<FRAGID>", sfrag, stylefrag)
 #+END_SRC
 
-colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
-
-
---layername "Soberanes" --featurename "Heat Perimeter"
-
-#+name: fcomplete
-#+BEGIN_SRC python :tangle program.py
-  from __future__ import print_function # for eprint() below
-
-  import sys
-
-  <<colorsub>>
-  <<fragsub>>
-  <<extract_kmls>>
-
-  fprolog1 = """<?xml version="1.0" encoding="UTF-8"?>
-  <kml xmlns="http://earth.google.com/kml/2.0">
-  <Document><name><DOCNAME></name>
-  """
-
-  color0 = 0xffffff
-  # from http://www.personal.psu.edu/cab38/ColorBrewer/ColorBrewer.html
-  # 9-class sequential PuBu
-  colors = [0xfff7fb, 0xece7f2, 0xd0d1e6, 0xa6bddb, 0x74a9cf,
-            0x3690c0, 0x0570b0, 0x045a8d, 0x023858]
-  ncolors = len(colors)
-  colorN = 0xdc0000
-  nkmls = 0
-
-  stylefrag="""<Style id="style<FRAGID>">
-  <LineStyle id="lineStyle<FRAGID>">
-  <color>ff000000</color>
-  <width>2</width>
-  </LineStyle>
-  <PolyStyle id="polyStyle<FRAGID>">
-  <color><HEXVALUE></color>
-  </PolyStyle>
-  </Style>
-  """
-
-  pprolog1="""<Placemark><name><PLACEMARKNAME></name>
-  <styleUrl>#style<FRAGID></styleUrl>
-  <MultiGeometry><POLYGON>"""
-
-  ppost="""</MultiGeometry></Placemark>
-  """
-
-  fpost="""</Document>
-  </kml>
-  """
-
-  # from [[http://stackoverflow.com/a/14981125][stack exchange]]
-  def eprint(*args, **kwargs):
-      print(*args, file=sys.stderr, **kwargs)
-
-
+#+name: fprolog
+#+BEGIN_SRC python
   def fprolog2():
       return fragsub(0, colorsub(color0, stylefrag))
 
@@ -403,7 +361,10 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 
       return "{0}\n{1}\n{2}\n{3}".format(re.sub("<DOCNAME>", layername, fprolog1),
                                          fprolog2(), fprolog3(), fprolog4())
+#+END_SRC
 
+#+name: kmlfrags
+#+BEGIN_SRC python
   def labelit(label):
       import math
 
@@ -441,6 +402,67 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
           if kml != None:
               result = result+kmlit(labels[i], kml, kmlfiles[i])
       return result
+#+END_SRC
+
+
+colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
+
+#+name: file_fragments
+#+BEGIN_SRC python
+  fprolog1 = """<?xml version="1.0" encoding="UTF-8"?>
+  <kml xmlns="http://earth.google.com/kml/2.0">
+  <Document><name><DOCNAME></name>
+  """
+
+  color0 = 0xffffff
+  # from http://www.personal.psu.edu/cab38/ColorBrewer/ColorBrewer.html
+  # 9-class sequential PuBu
+  colors = [0xfff7fb, 0xece7f2, 0xd0d1e6, 0xa6bddb, 0x74a9cf,
+            0x3690c0, 0x0570b0, 0x045a8d, 0x023858]
+  ncolors = len(colors)
+  colorN = 0xdc0000
+  nkmls = 0
+
+  stylefrag="""<Style id="style<FRAGID>">
+  <LineStyle id="lineStyle<FRAGID>">
+  <color>ff000000</color>
+  <width>2</width>
+  </LineStyle>
+  <PolyStyle id="polyStyle<FRAGID>">
+  <color><HEXVALUE></color>
+  </PolyStyle>
+  </Style>
+  """
+
+  pprolog1="""<Placemark><name><PLACEMARKNAME></name>
+  <styleUrl>#style<FRAGID></styleUrl>
+  <MultiGeometry><POLYGON>"""
+
+  ppost="""</MultiGeometry></Placemark>
+  """
+
+  fpost="""</Document>
+  </kml>
+  """
+#+END_SRC
+
+
+--layername "Soberanes" --featurename "Heat Perimeter"
+
+#+name: fcomplete
+#+BEGIN_SRC python :tangle program.py
+  <<eprint>>                      # must be first
+  import sys
+
+  <<colorsub>>
+  <<fragsub>>
+  <<extract_kmls>>
+
+  <<file_fragments>>
+
+  <<fprolog>>
+
+  <<kmlfrags>>
 
   def main(argv):
       import argparse
