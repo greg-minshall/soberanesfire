@@ -551,6 +551,13 @@ complicated?
 
 **** [[https://pypi.python.org/pypi/lxml/3.6.1][lxml]]
 
+okay, this works.
+
+to figure out the search term, an xml "flattener" is useful, such as
+#+BEGIN_EXAMPLE
+xml2 < ~/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml | less
+#+END_EXAMPLE
+
 #+BEGIN_SRC python :results output verbatim
   from lxml import etree
 
@@ -559,6 +566,8 @@ complicated?
 
   input= ["/Users/minshall/work/gis/play/IR/20160729_Soberanes_IR/doc.kml",
           "/Users/minshall/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml"]
+  # good simple reference for xpath expressions:
+  # http://www.w3schools.com/xsl/xpath_syntax.asp
   search = """//kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"] |
            //kml2.2:MultiGeometry[../../kml2.2:name="Fire Perimeter"]"""
 
@@ -576,10 +585,10 @@ complicated?
   tree.xpath('//kml2.2:Placemark[kml2.2:name="Heat Perimeter"]', namespaces=ns)
   tree.xpath('//kml2.2:Placemark[kml2.2:name="Heat Perimeter"]/kml2.2:MultiGeometry', namespaces=ns)
 
-  print len(tree.xpath(search, namespaces=ns))
+  print type(tree.xpath(search, namespaces=ns)[0])
 
 #+END_SRC
 
 #+RESULTS:
-: 9
+: <type 'lxml.etree._Element'>
 
