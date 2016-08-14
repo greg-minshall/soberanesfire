@@ -251,39 +251,12 @@ this prints the wkt of a layer/feature of a kml file
       main(sys.argv)
 #+END_SRC
 
-** awklike.py
-now, it turns out (see gis.org) that the exact way the IR data is
-give, we can forget all about any of the GIS tools, and extract the
-desired KML-bits with awk.  then, assuming Google Earth pays attention
-to the order in which layers are defined, probably all will be good.
+** working code
+*** common utility functions
 
-#+name: filelist
-#+BEGIN_SRC sh :var root="/Users/minshall/work/gis/play/IR/" :var pat="doc.kml"
-find ${root} -name ${pat} | sed sX^\./XXg | sort -n
-#+END_SRC
+***** eprint: print to stderr
 
-#+RESULTS: filelist
-| /Users/minshall/work/gis/play/IR//20160724_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160725_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160726_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160727_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160728_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160729_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160730_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160731_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160801_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160802_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160803_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160804_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160805_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160806_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160807_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160808_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160809_Soberanes_IR/doc.kml                  |
-| /Users/minshall/work/gis/play/IR//20160810_c0930_Soberanes_Aircraft3/doc.kml     |
-| /Users/minshall/work/gis/play/IR//20160811_c0530_Soberanes_Aircraft3_All/doc.kml |
-
-eprint: print to stderr.  must be *first* line in file
+this must be *first* (non-comment, non-blank) line in file.
 
 #+name: eprint
 #+BEGIN_SRC python
@@ -294,9 +267,13 @@ eprint: print to stderr.  must be *first* line in file
       print(*args, file=sys.stderr, **kwargs)
 #+END_SRC
 
+***** colorsub
+
 #+name: colorsub
 #+BEGIN_SRC python
   def rgbtokml(rgb):
+      """convert an rgb to kml's bgr"""
+
       r = (rgb/(256*256)) % 256
       g = (rgb/256) % 256
       b = rgb % 256
@@ -304,6 +281,8 @@ eprint: print to stderr.  must be *first* line in file
       return bgr
 
   def colorsub(hexvalue, stylefrag):
+      """insert an RGB value (really KML's BGR value) into a piece of text"""
+
       import re
       # http://stackoverflow.com/a/402704/1527747
       if type(hexvalue) is int:
@@ -314,9 +293,13 @@ eprint: print to stderr.  must be *first* line in file
                     stylefrag)
 #+END_SRC
 
+***** fragsub
+
 #+name: fragsub
 #+BEGIN_SRC python
   def fragsub(fragid, stylefrag):
+      """insert a fragment id into a kml fragment"""
+
       import re
       # http://stackoverflow.com/a/402704/1527747
       if type(fragid) is int:
@@ -325,6 +308,8 @@ eprint: print to stderr.  must be *first* line in file
           sfrag = fragid
       return re.sub("<FRAGID>", sfrag, stylefrag)
 #+END_SRC
+
+***** fprolog
 
 #+name: fprolog
 #+BEGIN_SRC python
@@ -342,15 +327,22 @@ eprint: print to stderr.  must be *first* line in file
       return fragsub("N", colorsub(colorN, stylefrag))
 
   def fprolog():
+      """return the prolog to a fragment (one perimeter) of a file"""
+
       import re
 
       return "{0}\n{1}\n{2}\n{3}".format(re.sub("<DOCNAME>", layername, fprolog1),
                                          fprolog2(), fprolog3(), fprolog4())
 #+END_SRC
 
+***** kmlfrags
+
 #+name: kmlfrags
 #+BEGIN_SRC python
   def labelit(label):
+      """we have N colors and M things to label; determine the correct 
+  color for label number LABEL"""
+
       import math
 
       return int(math.ceil((1.0*ncolors/nkmls)*label))
@@ -371,6 +363,10 @@ eprint: print to stderr.  must be *first* line in file
 
 
   def kmlfrags():
+      """do most of the processing: for each kml file, get the kml bits out
+  of it, then generate the correct label for it (the first and last file
+  have distinguished labels), and return the concatenation of it all"""
+
       global nkmls
 
       kmls = extract_kmls()
@@ -381,7 +377,8 @@ eprint: print to stderr.  must be *first* line in file
       labels = labels + ["N"]
       result = ""
       # we run the list *backwards* so that newer (more expansive)
-      # layers hide under older layers, to show the growth day to day
+      # layers hide under older (more restricted) layers, to show the
+      # growth day to day
       for i in list(reversed(range(len(kmls)))):
           kml = kmls[i]
           if kml != None:
@@ -389,6 +386,7 @@ eprint: print to stderr.  must be *first* line in file
       return result
 #+END_SRC
 
+***** file_fragments: string constants used by rest of code
 
 colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 
@@ -431,8 +429,14 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
   """
 #+END_SRC
 
+*** awklike
 
 --layername "Soberanes" --featurename "Heat Perimeter"
+
+now, it turns out (see gis.org) that the exact way the IR data is
+give, we can forget all about any of the GIS tools, and extract the
+desired KML-bits with awk.  then, assuming Google Earth pays attention
+to the order in which layers are defined, probably all will be good.
 
 okay, because of the IR doc.kml files' format, we can do all this
 without worrying much about GIS APIs, basically, it could be an awk
@@ -497,13 +501,18 @@ file formats didn't work for this.
 
 *** parsing as an xml document
 
-**** xml parsers we ended up not using for one reason or other
+*** xml parsers we ended up not using for one reason or other
+
+so, maybe i should break down and use some
+[[https://docs.python.org/2/library/xml.html][python xml parser]].  but, which one?
+
 ***** [[https://docs.python.org/2.7/library/xml.etree.elementtree.html][Element Tree]]
 
 it [[http://stackoverflow.com/a/1912483/1527747][seems like]] [[https://docs.python.org/2.7/library/xml.etree.elementtree.html][Element Tree]] is the way to parse.
 
 this works for the first set of IR files for the Soberanes fire, but
-not for the military-produced files.
+not for the military-produced files.  possibly i need the full power
+of xpath expressions (which i guess ElementTree doesn't provide).
 
 #+BEGIN_SRC python :var input="/Users/minshall/work/gis/play/IR/20160729_Soberanes_IR/doc.kml" :results output verbatim
   import xml.etree.ElementTree as et
@@ -578,17 +587,16 @@ the multigeometries.
 
 complicated?
 
+*** xpathusing.py
 
-**** [[https://pypi.python.org/pypi/lxml/3.6.1][lxml]]
-
-okay, this works.
+okay, [[https://pypi.python.org/pypi/lxml/3.6.1][lxml]] works.  nicely.
 
 to figure out the search term, an xml "flattener" is useful, such as
 #+BEGIN_EXAMPLE
 xml2 < ~/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml | less
 #+END_EXAMPLE
 
-a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/xpath_syntax.asp][w3schools]]
+a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/xpath_syntax.asp][w3schools.com]]
 
 #+BEGIN_SRC python :tangle xpathusing.py :results output verbatim
   <<eprint>>                      # must be first
