@@ -612,6 +612,7 @@ a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/
 
       def_expr = """
   //kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"] |
+  //kml2.2:MultiGeometry[../../kml2.2:name="Estimated Perimeter"] |
   //kml2.2:MultiGeometry[../../kml2.2:name="Fire Perimeter"]"""
 
       cmd = argv[0]
