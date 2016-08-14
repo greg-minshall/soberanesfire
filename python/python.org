@@ -586,14 +586,14 @@ a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/
   <<kmlfrags>>
 
   def extract_kmls():
-        import os
-        from lxml import etree
+      import os
+      from lxml import etree
 
-        kmls = []
-        for file in kmlfiles:
-            tree = etree.parse(file)
-            kmls = kmls + [etree.tostring(tree.xpath(expr, namespaces=nspace)[0])]
-        return kmls
+      kmls = []
+      for file in kmlfiles:
+          tree = etree.parse(file)
+          kmls = kmls + [etree.tostring(tree.xpath(expr, namespaces=nspace)[0])]
+      return kmls
 
 
   def main(argv):
@@ -606,11 +606,10 @@ a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/
       def_nslong = "http://www.opengis.net/kml/2.2"
       def_ns = { def_nsabbrev : def_nslong }
 
-      def_expr = '//kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"] | //kml2.2:MultiGeometry[../../kml2.2:name="Fire Perimeter"]'
-
-      # XXX
-      def_input = ["/Users/minshall/work/gis/play/IR/20160729_Soberanes_IR/doc.kml",
-                   "/Users/minshall/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml"]
+      def_expr = """
+  //kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"] |
+  //kml2.2:MultiGeometry[../../kml2.2:name="Estimated Perimeter"] |
+  //kml2.2:MultiGeometry[../../kml2.2:name="Fire Perimeter"]"""
 
       cmd = argv[0]
       parser = argparse.ArgumentParser(description="take a number of geometry features from a group of kml files and produce one kml file")
@@ -624,10 +623,10 @@ a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/
                           help='name of desired layer (output file, default "Soberanes")')
 
       # use "type=str" since we use the file name for ogr.Open()
-      parser.add_argument('kmlfiles', type=str, nargs="?", default=def_input)
+      parser.add_argument('kmlfiles', type=str, nargs="+")
       args = parser.parse_args();
       kmlfiles = args.kmlfiles
-      nspace = "{{{0}:{1}}}".format(args.nsabbrev, args.nslong)
+      nspace =  {args.nsabbrev: args.nslong}
       layername = args.layername
       expr = args.expr
 
