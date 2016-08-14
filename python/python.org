@@ -489,7 +489,8 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
 
 *** parsing as an xml document
 
-**** [[https://docs.python.org/2.7/library/xml.etree.elementtree.html][Element Tree]]
+**** xml parsers we ended up not using for one reason or other
+***** [[https://docs.python.org/2.7/library/xml.etree.elementtree.html][Element Tree]]
 
 it [[http://stackoverflow.com/a/1912483/1527747][seems like]] [[https://docs.python.org/2.7/library/xml.etree.elementtree.html][Element Tree]] is the way to parse.
 
@@ -525,7 +526,7 @@ not for the military-produced files.
 #+RESULTS:
 : 89305
 
-**** [[https://github.com/stchris/untangle][untangle]]
+***** [[https://github.com/stchris/untangle][untangle]]
 but, [[https://github.com/stchris/untangle][untangle]] seems also nice.  so...
 #+BEGIN_EXAMPLE
 sudo pip install untangle
@@ -546,7 +547,7 @@ for i in kml.kml.Document:
 
 i'm not sure, though, how to get the raw contents of a subtree.
 
-**** [[https://github.com/martinblech/xmltodict/blob/master/xmltodict.py][xmltodict]]
+***** [[https://github.com/martinblech/xmltodict/blob/master/xmltodict.py][xmltodict]]
 
 another simple parser.  allows unparse.
 
@@ -565,9 +566,10 @@ this is nice.  but, really, probably need xpath expression support, in
 order to allow user to specify the place(s) in the tree to pull out
 the multigeometries.
 
-**** [[https://docs.python.org/3/library/xml.dom.html][xml.dom]]
+***** [[https://docs.python.org/3/library/xml.dom.html][xml.dom]]
 
 complicated?
+
 
 **** [[https://pypi.python.org/pypi/lxml/3.6.1][lxml]]
 
@@ -578,37 +580,35 @@ to figure out the search term, an xml "flattener" is useful, such as
 xml2 < ~/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml | less
 #+END_EXAMPLE
 
+a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/xpath_syntax.asp][w3schools]]
+
 #+BEGIN_SRC python :results output verbatim
-  from lxml import etree
+
+  def extract_kmls(kmlfiles, search, namespaces):
+        import os
+        from lxml import etree
+
+        kmls = []
+        for file in kmlfiles:
+            tree = etree.parse(file)
+            kmls = kmls + [etree.tostring(tree.xpath(search,
+                                                     namespaces=namespaces)[0])]
+        return kmls
 
   # namespace
   ns = {"kml2.2": "http://www.opengis.net/kml/2.2"}
 
-  input= ["/Users/minshall/work/gis/play/IR/20160729_Soberanes_IR/doc.kml",
-          "/Users/minshall/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml"]
-  # good simple reference for xpath expressions:
-  # http://www.w3schools.com/xsl/xpath_syntax.asp
+  input = ["/Users/minshall/work/gis/play/IR/20160729_Soberanes_IR/doc.kml",
+           "/Users/minshall/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml"]
+
   search = """//kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"] |
            //kml2.2:MultiGeometry[../../kml2.2:name="Fire Perimeter"]"""
 
-  which = 1
-
-  tree = etree.parse(input[which])
-
-  # absolute location
-  tree.xpath('/kml2.2:kml/kml2.2:Document', namespaces=ns)
-
-  # searching!
-  tree.xpath('//kml2.2:Placemark', namespaces=ns)
-
-  # more searching
-  tree.xpath('//kml2.2:Placemark[kml2.2:name="Heat Perimeter"]', namespaces=ns)
-  tree.xpath('//kml2.2:Placemark[kml2.2:name="Heat Perimeter"]/kml2.2:MultiGeometry', namespaces=ns)
-
-  print type(tree.xpath(search, namespaces=ns)[0])
+  kmls = extract_kmls(input, search, ns)
+  print len(kmls[1])
 
 #+END_SRC
 
 #+RESULTS:
-: <type 'lxml.etree._Element'>
+: 1526
 
