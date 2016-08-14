@@ -592,7 +592,11 @@ a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/
       kmls = []
       for file in kmlfiles:
           tree = etree.parse(file)
-          kmls = kmls + [etree.tostring(tree.xpath(expr, namespaces=nspace)[0])]
+          extracts = tree.xpath(expr, namespaces=nspace)
+          frags = ""
+          for extract in extracts:
+              frags = frags + etree.tostring(extract)
+          kmls = kmls + [frags]
       return kmls
 
 
@@ -608,7 +612,6 @@ a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/
 
       def_expr = """
   //kml2.2:MultiGeometry[../kml2.2:name="Heat Perimeter"] |
-  //kml2.2:MultiGeometry[../../kml2.2:name="Estimated Perimeter"] |
   //kml2.2:MultiGeometry[../../kml2.2:name="Fire Perimeter"]"""
 
       cmd = argv[0]
