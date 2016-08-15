@@ -30,3 +30,10 @@ which did the job nicely.  this resulted in xpathusing.py, again from
 
 this allowed me to [[https://twitter.com/gregminshall/status/764950332312989696][post]] a map that shows how the fire evolved from day
 to day.
+
+my *original* plan had been to create difference files from day N to
+day N+1.  i ended up realizing i didn't need to do that, that i could
+just stack the layers in a KML file (with the newest as the *bottom*
+layer, so that the older layers would render on top of the newer
+layers).  but, the [[https://github.com/greg-minshall/soberanesfire/blob/master/kmls/Soberanes-growth-0724-0814.kml][kml files]] are getting pretty big; i'm not sure if
+differencing would help with that.
