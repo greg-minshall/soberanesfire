@@ -444,6 +444,8 @@ script.  unfortunately, when a new plane was put into service, the new
 file formats didn't work for this.
 
 #+BEGIN_SRC python :tangle awklike.py
+  <<caution>>
+
   <<eprint>>                      # must be first
   import sys
 
@@ -599,6 +601,8 @@ xml2 < ~/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml | less
 a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/xpath_syntax.asp][w3schools.com]]
 
 #+BEGIN_SRC python :tangle xpathusing.py :results output verbatim
+  <<caution>>
+
   <<eprint>>                      # must be first
   import sys
 
