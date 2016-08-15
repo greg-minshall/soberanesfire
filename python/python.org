@@ -668,3 +668,8 @@ a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/
       main(sys.argv)
 
 #+END_SRC
+
+here's an example of how to use:
+#+BEGIN_EXAMPLE
+python xpathusing.py `ls ~/work/gis/play/IR/20160???*Soberanes*/doc.kml | sort` 2>&1 > y.kml
+#+END_EXAMPLE
