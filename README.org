@@ -1,0 +1,32 @@
+* some experiments and some tools for processing infrared fire data
+
+on 22 July, 2016, a fire was started (by an illegal campfire) up
+Soberanes Creek on the central coast of California.  the federal
+government [[http://ftp.nifc.gov/incident_specific_data/calif_s/CALFIRE/2016_Incidents/CA-BEU-003422_Soberanes/IR/][published]] set of infrared data (i guess from surveillance
+airplane flights).  i took up feeding that data each day (using Google
+Earth) to produce jpeg files that i [[https://twitter.com/gregminshall/status/764829390215667714][posted]] on Twitter.
+
+in the early days of the fire, and friend of mine produced some nice
+maps showing how the fire evolved from day to day, and i [[https://twitter.com/gregminshall/status/759456055294242816][posted]]
+these.  when he stopped producing these maps, i became interested in
+how to produce my own versions; i was already interested in learning
+more about GIS for other reasons.
+
+since i was starting from scratch, i wasn't sure what programming
+language to use for the project.  so, i started off looking at [[https://github.com/greg-minshall/soberanesfire/tree/master/c%2B%2B][C++]] and
+[[https://github.com/greg-minshall/soberanesfire/tree/master/python][python]], and quickly settled on python (i'm more of a C programmer than
+a C++ one).
+
+with python, there was the issue of how to parse the file.  at first,
+the infrared files were all of a standard format, and it seemed as if
+i could essentially parse them with awk(1) (but using python instead,
+as all the other manipulations were easier there).  this generated
+awklike.py from [[https://github.com/greg-minshall/soberanesfire/blob/master/python/python.org][python.org]].  then, one day the normal government plane
+went out of service and a new plane started generating the files.
+these were in a very different format, so my script broke.  i needed a
+new parser and, after playing around with several, settled on [[https://pypi.python.org/pypi/lxml/3.6.1][lxml]],
+which did the job nicely.  this resulted in xpathusing.py, again from
+[[https://github.com/greg-minshall/soberanesfire/blob/master/python/python.org][python.org]].  
+
+this allowed me to [[https://twitter.com/gregminshall/status/764950332312989696][post]] a map that shows how the fire evolved from day
+to day.
