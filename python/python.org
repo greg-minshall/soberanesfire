@@ -35,9 +35,6 @@ y2 = x2.difference(x1)
 print y2
 #+END_SRC
 
-#+RESULTS:
-
-
 then, export it somehow in kml format.
 
 [[http://deparkes.co.uk/2015/03/11/how-to-plot-polygons-in-python/][viewing polygons in python]]
@@ -52,8 +49,20 @@ c = a.difference(b)
 print c
 #+END_SRC
 
+#+BEGIN_SRC python :results output verbatim
+  <<extractwkt>>
+
+  file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
+  layer = "Soberanes"
+  feature = "Heat Perimeter"
+
+  wkt = extractwkt(file, layer, feature)
+  print(len(wkt))
+
+#+END_SRC
+
 #+RESULTS:
-: POLYGON ((2.435413811199113 0.5645861888008871, 2.435410503598313 0.5645729841183068, 2.38581929876693 0.4259748514523659, 2.322881896522533 0.2929048947610042, 2.247204418453818 0.1666446504705974, 2.159515680044106 0.04841007375453255, 2.060660171779822 -0.06066017177982053, 1.951589926245469 -0.1595156800441044, 1.833355349529405 -0.2472044184538169, 1.707095105238998 -0.3228818965225317, 1.574025148547636 -0.3858192987669296, 1.435427015881695 -0.4354105035983127, 1.292635483024194 -0.4711779206048452, 1.147025710494343 -0.4927770900082951, 1.000000000000002 -0.5, 0.8529742895056617 -0.4927770900082955, 0.7073645169758103 -0.4711779206048461, 0.5645729841183093 -0.4354105035983142, 0.4259748514523682 -0.3858192987669313, 0.2929048947610065 -0.3228818965225342, 0.1666446504705994 -0.2472044184538196, 0.0484100737545341 -0.1595156800441073, -0.06066017177981919 -0.06066017177982341, -0.1595156800441035 0.04841007375452977, -0.2472044184538165 0.1666446504705945, -0.3228818965225315 0.2929048947610015, -0.3858192987669293 0.4259748514523634, -0.4354105035983127 0.5645729841183046, -0.4711779206048452 0.7073645169758058, -0.4927770900082953 0.8529742895056575, -0.5 0.9999999999999984, -0.4927770900082953 1.14702571049434, -0.4711779206048461 1.292635483024191, -0.4354105035983136 1.435427015881693, -0.3858192987669304 1.574025148547634, -0.3228818965225329 1.707095105238996, -0.2472044184538182 1.833355349529403, -0.1595156800441058 1.951589926245468, -0.06066017177982141 2.060660171779821, 0.0484100737545311 2.159515680044105, 0.1666446504705956 2.247204418453817, 0.292904894761002 2.322881896522532, 0.4259748514523632 2.385819298766929, 0.5645729841183038 2.435410503598312, 0.5645861888008867 2.435413811199113, 0.5288220793951539 2.292635483024191, 0.5072229099917047 2.14702571049434, 0.5 1.999999999999998, 0.5072229099917047 1.852974289505657, 0.5288220793951548 1.707364516975806, 0.5645894964016873 1.564572984118305, 0.6141807012330707 1.425974851452363, 0.6771181034774685 1.292904894761001, 0.7527955815461835 1.166644650470595, 0.8404843199558965 1.04841007375453, 0.9393398282201808 0.9393398282201766, 1.048410073754534 0.8404843199558927, 1.166644650470599 0.7527955815461804, 1.292904894761006 0.6771181034774658, 1.425974851452368 0.6141807012330687, 1.564572984118309 0.5645894964016858, 1.70736451697581 0.5288220793951539, 1.852974289505662 0.5072229099917045, 2.000000000000002 0.5, 2.147025710494343 0.5072229099917049, 2.292635483024195 0.5288220793951548, 2.435413811199113 0.5645861888008871))
+: 25656
 
 ** using osgeo
 
@@ -111,17 +120,67 @@ print kml
 
 this prints the wkt of a layer/feature of a kml file
 
+#+name: featuregeometry
+#+BEGIN_SRC python
+  def featuregeometry(filename, layername, featurename):
+        """extract the geometry of a given feature in a given layer in a given
+  file"""
+        import osgeo
+        from osgeo import gdal
+        from osgeo import ogr
+        file = ogr.Open(filename)
+        # print("this is %s data" % file.GetDriver().GetName())
+        # print("there is/are %d layer(s)" % file.GetLayerCount())
+        l = file.GetLayerByName(layername) # type(l) == OGRLayerH
+        if l is None:
+            eprint("layer '%s' is not found in file '%s'" % (layername, filename))
+            sys.exit(3)
+        l.ResetReading()
+        # find the right feature
+        found = False
+        for featid in range(l.GetFeatureCount()):
+              feature = l.GetFeature(featid); # type(feature) == OGRFeatureH
+              fieldid = feature.GetFieldIndex("Name");
+              name = feature.GetFieldAsString(fieldid);
+              if (name == featurename):
+                    found = True
+                    break;
+        if not found:
+              eprint("feature name '%s' not found in layer '%s' in file '%s'" %
+                     (featurename, layername, filename))
+              sys.exit(3)
+        # okay, we found the right feature.  now, find the polygon, maybe
+        # a multigeometry
+        geometry = feature.GetGeometryRef().Clone()
+        return geometry
+#+END_SRC
+
+#+name: extractwkt
+#+BEGIN_SRC python
+  def extractwkt(ifile, layername, featurename):
+      """returns the WKT of the geometry of feature FEATURENAME in layer
+      LAYERNAME in file FILE
+
+      """
+
+      <<featuregeometry>>
+
+      # get polygons from this file
+      pgons = featuregeometry(ifile, layername, featurename)
+      # print(pgons)
+      return(pgons.ExportToWkt())
+#+END_SRC
+
 #+BEGIN_SRC python :tangle extractwkt.py
   <<caution>>
 
-  from __future__ import print_function # for eprint() below
+  <<eprint>>
 
   import argparse
   import os
-  import osgeo
-  from osgeo import gdal
-  from osgeo import ogr
   import sys
+
+  <<extractwkt>>
 
   # XXX
   # it would be nice to read direct from a .kmz (zip) file.  but it
@@ -136,10 +195,6 @@ this prints the wkt of a layer/feature of a kml file
 
   # get layer name: Soberanes
   # get feature name: Heat Perimeter
-
-  # from [[http://stackoverflow.com/a/14981125][stack exchange]]
-  def eprint(*args, **kwargs):
-      print(*args, file=sys.stderr, **kwargs)
 
   def main(argv):
       cmd = argv[0]
@@ -159,39 +214,7 @@ this prints the wkt of a layer/feature of a kml file
           eprint("input file '%s' cannot be read" % args.ifile)
           sys.exit(2)
 
-      # get polygons from this file
-      pgons = procfile(args.ifile, args.layername, args.featurename)
-      # print(pgons)
-      wkt = pgons.ExportToWkt()
-      print(wkt)
-
-  def procfile(filename, layername, featurename):
-      """extract the polygon of a given feature in a given layer in a given file"""
-      file = ogr.Open(filename)
-      # print("this is %s data" % file.GetDriver().GetName())
-      # print("there is/are %d layer(s)" % file.GetLayerCount())
-      l = file.GetLayerByName(layername) # type(l) == OGRLayerH
-      if l is None:
-          eprint("layer '%s' is not found in file '%s'" % (layername, filename))
-          sys.exit(3)
-      l.ResetReading()
-      # find the right feature
-      found = False
-      for featid in range(l.GetFeatureCount()):
-          feature = l.GetFeature(featid); # type(feature) == OGRFeatureH
-          fieldid = feature.GetFieldIndex("Name");
-          name = feature.GetFieldAsString(fieldid);
-          if (name == featurename):
-              found = True
-              break;
-      if not found:
-          eprint("feature name '%s' not found in layer '%s' in file '%s'" %
-                 (featurename, layername, filename))
-          sys.exit(3)
-      # okay, we found the right feature.  now, find the polygon, maybe
-      # a multigeometry
-      geometry = feature.GetGeometryRef().Clone()
-      return geometry
+      print(extractwkt(args.ifile, args.layername, args.featurename))
 
   if __name__ == "__main__":
       main(sys.argv)
