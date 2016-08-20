@@ -61,19 +61,36 @@ print c
   print(1)
   geom = featuregeometry(file, layer, feature)
   print(2)
-  print(geom)
-  print(len(geom.exterior.xy))
-
-  x,y = geom.exterior.xy
+  # zip(*zip): http://stackoverflow.com/q/2233204/1527747 and
+  # https://docs.python.org/3/tutorial/controlflow.html#unpacking-argument-lists
+  (x,y,z) = zip(*geom.GetGeometryRef(0).GetGeometryRef(0).GetPoints())
+  print(max(x), max(y), min(x), min(y))
 
   fig = pyplot.figure(1, figsize=(5,5), dpi=90)
-  ax = fig.add_subplot(111)       # 111 ?
+  # for '111': http://stackoverflow.com/a/6981055/1527747
+  # for 'aspect=1.0': http://stackoverflow.com/q/7965743/1527747
+  ax = fig.add_subplot(111, aspect=1.0)
   ax.plot(x, y, color='#6699cc', alpha=0.7,
       linewidth=3, solid_capstyle='round', zorder=2)
   ax.set_title('Polygon')
+  pyplot.show()
 #+END_SRC
 
 #+RESULTS:
+: 
+: >>> ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... >>> >>> >>> >>> >>> 1
+: >>> 2
+: ... >>> (-121.828907716278, 36.4816509479127, -121.925389605495, 36.3793207139797)
+: >>> ... >>> ... [<matplotlib.lines.Line2D object at 0x116898150>]
+: <matplotlib.text.Text object at 0x1164cba50>
+
+** using [[https://github.com/Toblerity/Fiona][fiona]]
+
+[[http://www.macwright.org/2012/10/31/gis-with-python-shapely-fiona.html][here]] is a post on fiona.  it seems like fiona gives you a nicer
+interface to the attributes than calling ogr directly.
+
+sadly, fiona doesn't deal with the range of filetypes that ogr does,
+in particular, it doesn't deal with kml.
 
 ** using osgeo
 
