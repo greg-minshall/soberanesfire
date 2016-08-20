@@ -49,20 +49,31 @@ c = a.difference(b)
 print c
 #+END_SRC
 
-#+BEGIN_SRC python :results output verbatim
-  <<extractwkt>>
+#+BEGIN_SRC python :session py :results output verbatim
+  from matplotlib import pyplot
+
+  <<featuregeometry>>
 
   file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
   layer = "Soberanes"
   feature = "Heat Perimeter"
 
-  wkt = extractwkt(file, layer, feature)
-  print(len(wkt))
+  print(1)
+  geom = featuregeometry(file, layer, feature)
+  print(2)
+  print(geom)
+  print(len(geom.exterior.xy))
 
+  x,y = geom.exterior.xy
+
+  fig = pyplot.figure(1, figsize=(5,5), dpi=90)
+  ax = fig.add_subplot(111)       # 111 ?
+  ax.plot(x, y, color='#6699cc', alpha=0.7,
+      linewidth=3, solid_capstyle='round', zorder=2)
+  ax.set_title('Polygon')
 #+END_SRC
 
 #+RESULTS:
-: 25656
 
 ** using osgeo
 
@@ -121,7 +132,7 @@ print kml
 this prints the wkt of a layer/feature of a kml file
 
 #+name: featuregeometry
-#+BEGIN_SRC python
+#+BEGIN_SRC python :results none
   def featuregeometry(filename, layername, featurename):
         """extract the geometry of a given feature in a given layer in a given
   file"""
