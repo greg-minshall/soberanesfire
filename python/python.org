@@ -53,7 +53,11 @@ print c
 #+END_SRC
 
 #+BEGIN_SRC python :session py :results output verbatim
+  <<eprint>>
+
+  import ast
   from matplotlib import pyplot
+  import sys
 
   <<featuregeometry>>
 
@@ -61,32 +65,32 @@ print c
   layer = "Soberanes"
   feature = "Heat Perimeter"
 
-  print(1)
   geom = featuregeometry(file, layer, feature)
-  print(2)
-  # zip(*zip): http://stackoverflow.com/q/2233204/1527747 and
-  # https://docs.python.org/3/tutorial/controlflow.html#unpacking-argument-lists
-  # http://stackoverflow.com/a/2511319/1527747 ("it's (apply)")
-  (x,y,z) = zip(*geom.GetGeometryRef(0).GetGeometryRef(0).GetPoints())
-  print(max(x), max(y), min(x), min(y))
+  jsonstr = geom.ExportToJson()   # now have a string
+  # we could use plain eval(), but the following is safer
+  json = ast.literal_eval(jsonstr) # now have a dict
+  if json['type'] != 'MultiPolygon':
+      eprint("type is '{0}', but we only support 'MultiPolygon'".format(json['type']))
+      sys.exit(2)
 
   fig = pyplot.figure(1, figsize=(5,5), dpi=90)
   # for '111': http://stackoverflow.com/a/6981055/1527747
   # for 'aspect=1.0': http://stackoverflow.com/q/7965743/1527747
   ax = fig.add_subplot(111, aspect=1.0)
-  ax.plot(x, y, color='#6699cc', alpha=0.7,
-      linewidth=3, solid_capstyle='round', zorder=2)
-  ax.set_title('Polygon')
+  for pgon in range(len(json['coordinates'])):
+      for lring in range(len(json['coordinates'][pgon])):
+          # zip(*zip): http://stackoverflow.com/q/2233204/1527747 and
+          # https://docs.python.org/3/tutorial/controlflow.html#unpacking-argument-lists
+          # http://stackoverflow.com/a/2511319/1527747 ("it's (apply)")
+          (x,y,z) = zip(*json['coordinates'][pgon][lring])
+          ignore = ax.plot(x, y, color='#6699cc', alpha=0.7,
+                           linewidth=1, solid_capstyle='round', zorder=2)
+
+  ignore = ax.set_title('Polygon')
   pyplot.show()
 #+END_SRC
 
 #+RESULTS:
-: 
-: >>> ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... >>> >>> >>> >>> >>> 1
-: >>> 2
-: ... >>> (-121.828907716278, 36.4816509479127, -121.925389605495, 36.3793207139797)
-: >>> ... >>> ... [<matplotlib.lines.Line2D object at 0x116898150>]
-: <matplotlib.text.Text object at 0x1164cba50>
 
 ** using [[https://github.com/Toblerity/Fiona][fiona]]
 
@@ -94,7 +98,26 @@ print c
 interface to the attributes than calling ogr directly.
 
 sadly, fiona doesn't deal with the range of filetypes that ogr does,
-in particular, it doesn't deal with kml.  but, we could 
+in particular, it doesn't deal with kml.  but, we can import with
+osgeo/ogr, then convert to Json, then, hopefully, feed that to fiona.
+
+in fact, we don't need fiona at all, just (safely) eval the json.
+(too bad fiona doesn't have an "import from string" function; i'd be
+happier with that.)
+
+#+BEGIN_SRC python :session *py* :results none
+  import ast;                     # for ast.literal_eval
+  <<featuregeometry>>
+
+  file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
+  layer = "Soberanes"
+  feature = "Heat Perimeter"
+
+  geom = featuregeometry(file, layer, feature)
+  # we could use plain eval(), but this is safer
+  json = ast.literal_eval(geom.ExportToJson())
+
+#+END_SRC
 
 ** using osgeo
 
