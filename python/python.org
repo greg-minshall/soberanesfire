@@ -52,45 +52,127 @@ c = a.difference(b)
 print c
 #+END_SRC
 
-#+BEGIN_SRC python :session py :results output verbatim
+#+name: herepoly
+#+BEGIN_SRC python :session py  :tangle herepoly.py :results output verbatim
   <<eprint>>
 
-  import ast
-  from matplotlib import pyplot
-  import sys
-
   <<featuregeometry>>
+
+  def herepoly(file, layer, feature):
+      import ast
+      # from https://github.com/matplotlib/matplotlib/issues/5836
+      import warnings;
+      with warnings.catch_warnings():
+          warnings.simplefilter("ignore"); 
+          from matplotlib import pyplot
+      import sys
+
+      geom = featuregeometry(file, layer, feature)
+      jsonstr = geom.ExportToJson()   # now have a string
+      # we could use plain eval(), but the following is safer
+      json = ast.literal_eval(jsonstr) # now have a dict
+      if json['type'] != 'MultiPolygon':
+          eprint("""type is '{0}', but we only support
+          'MultiPolygon'""".format(json['type']))
+          sys.exit(2)
+
+      fig = pyplot.figure(1, figsize=(5,5), dpi=90)
+      # for '111': http://stackoverflow.com/a/6981055/1527747
+      # for 'aspect=1.0': http://stackoverflow.com/q/7965743/1527747
+      ax = fig.add_subplot(111, aspect=1.0)
+      for pgon in range(len(json['coordinates'])):
+          for lring in range(len(json['coordinates'][pgon])):
+              # zip(*zip): http://stackoverflow.com/q/2233204/1527747 and
+              # https://docs.python.org/3/tutorial/controlflow.html#unpacking-argument-lists
+              # http://stackoverflow.com/a/2511319/1527747 ("it's (apply)")
+              (x,y,z) = zip(*json['coordinates'][pgon][lring])
+              ignore = ax.plot(x, y, color='#6699cc', alpha=0.7,
+                               linewidth=1, solid_capstyle='round', zorder=2)
+
+      ignore = ax.set_title('Polygon')
+      pyplot.show()
 
   file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
   layer = "Soberanes"
   feature = "Heat Perimeter"
+  herepoly(file, layer, feature)
 
-  geom = featuregeometry(file, layer, feature)
-  jsonstr = geom.ExportToJson()   # now have a string
-  # we could use plain eval(), but the following is safer
-  json = ast.literal_eval(jsonstr) # now have a dict
-  if json['type'] != 'MultiPolygon':
-      eprint("type is '{0}', but we only support 'MultiPolygon'".format(json['type']))
-      sys.exit(2)
-
-  fig = pyplot.figure(1, figsize=(5,5), dpi=90)
-  # for '111': http://stackoverflow.com/a/6981055/1527747
-  # for 'aspect=1.0': http://stackoverflow.com/q/7965743/1527747
-  ax = fig.add_subplot(111, aspect=1.0)
-  for pgon in range(len(json['coordinates'])):
-      for lring in range(len(json['coordinates'][pgon])):
-          # zip(*zip): http://stackoverflow.com/q/2233204/1527747 and
-          # https://docs.python.org/3/tutorial/controlflow.html#unpacking-argument-lists
-          # http://stackoverflow.com/a/2511319/1527747 ("it's (apply)")
-          (x,y,z) = zip(*json['coordinates'][pgon][lring])
-          ignore = ax.plot(x, y, color='#6699cc', alpha=0.7,
-                           linewidth=1, solid_capstyle='round', zorder=2)
-
-  ignore = ax.set_title('Polygon')
-  pyplot.show()
 #+END_SRC
 
-#+RESULTS:
+#+RESULTS: herepoly
+#+begin_example
+
+>>> >>> ... ... >>> ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... >>> ... ... ... ... >>>   File "<stdin>", line 1
+    geom = featuregeometry(file, layer, feature)
+    ^
+IndentationError: unexpected indent
+File "<stdin>", line 1
+    jsonstr = geom.ExportToJson()   # now have a string
+    ^
+IndentationError: unexpected indent
+...   File "<stdin>", line 2
+    json = ast.literal_eval(jsonstr) # now have a dict
+    ^
+IndentationError: unexpected indent
+File "<stdin>", line 1
+    if json['type'] != 'MultiPolygon':
+    ^
+IndentationError: unexpected indent
+File "<stdin>", line 1
+    eprint("type is '{0}', but we only support
+    ^
+IndentationError: unexpected indent
+File "<stdin>", line 1
+    'MultiPolygon'".format(json['type']))
+    ^
+IndentationError: unexpected indent
+File "<stdin>", line 1
+    sys.exit(2)
+    ^
+IndentationError: unexpected indent
+>>>   File "<stdin>", line 1
+    fig = pyplot.figure(1, figsize=(5,5), dpi=90)
+    ^
+IndentationError: unexpected indent
+... ...   File "<stdin>", line 3
+    ax = fig.add_subplot(111, aspect=1.0)
+    ^
+IndentationError: unexpected indent
+File "<stdin>", line 1
+    for pgon in range(len(json['coordinates'])):
+    ^
+IndentationError: unexpected indent
+File "<stdin>", line 1
+    for lring in range(len(json['coordinates'][pgon])):
+    ^
+IndentationError: unexpected indent
+File "<stdin>", line 1
+    print(pgon, lring)
+    ^
+IndentationError: unexpected indent
+... ... ...   File "<stdin>", line 4
+    (x,y,z) = zip(*json['coordinates'][pgon][lring])
+    ^
+IndentationError: unexpected indent
+File "<stdin>", line 1
+    ignore = ax.plot(x, y, color='#6699cc', alpha=0.7,
+    ^
+IndentationError: unexpected indent
+File "<stdin>", line 1
+    linewidth=1, solid_capstyle='round', zorder=2)
+    ^
+IndentationError: unexpected indent
+File "<stdin>", line 1
+    ignore = ax.set_title('Polygon')
+    ^
+IndentationError: unexpected indent
+File "<stdin>", line 1
+    pyplot.show()
+    ^
+IndentationError: unexpected indent
+/sw/lib/python2.7/site-packages/matplotlib/font_manager.py:278: UserWarning: Matplotlib is building the font cache using fc-list. This may take a moment.
+  warnings.warn('Matplotlib is building the font cache using fc-list. This may take a moment.')
+#+end_example
 
 ** using [[https://github.com/Toblerity/Fiona][fiona]]
 
