@@ -1,8 +1,11 @@
 * using python for gis things
+** intro
 
 lots of code in this file hasn't really been developed.
 extractwkt.py, awklike.py, and xpathusing.py are function (and the
 last is what we are currently using).
+
+[[http://stackoverflow.com/questions/101268/hidden-features-of-python][hidden features of python exposed!!]]
 
 #+property: header-args :noweb yes
 
@@ -63,6 +66,7 @@ print c
   print(2)
   # zip(*zip): http://stackoverflow.com/q/2233204/1527747 and
   # https://docs.python.org/3/tutorial/controlflow.html#unpacking-argument-lists
+  # http://stackoverflow.com/a/2511319/1527747 ("it's (apply)")
   (x,y,z) = zip(*geom.GetGeometryRef(0).GetGeometryRef(0).GetPoints())
   print(max(x), max(y), min(x), min(y))
 
@@ -90,7 +94,7 @@ print c
 interface to the attributes than calling ogr directly.
 
 sadly, fiona doesn't deal with the range of filetypes that ogr does,
-in particular, it doesn't deal with kml.
+in particular, it doesn't deal with kml.  but, we could 
 
 ** using osgeo
 
@@ -144,9 +148,7 @@ print kml
 #+RESULTS:
 : None
 
-** extractwkt.py
-
-this prints the wkt of a layer/feature of a kml file
+** featuregeometry
 
 #+name: featuregeometry
 #+BEGIN_SRC python :results none
@@ -183,6 +185,10 @@ this prints the wkt of a layer/feature of a kml file
         return geometry
 #+END_SRC
 
+** extractwkt.py
+
+this prints the wkt of a layer/feature of a kml file
+
 #+name: extractwkt
 #+BEGIN_SRC python
   def extractwkt(ifile, layername, featurename):
@@ -199,6 +205,22 @@ this prints the wkt of a layer/feature of a kml file
       return(pgons.ExportToWkt())
 #+END_SRC
 
+#+name: extractjson
+#+BEGIN_SRC python
+  def extractjson(ifile, layername, featurename):
+      """returns the WKT of the geometry of feature FEATURENAME in layer
+      LAYERNAME in file FILE
+
+      """
+
+      <<featuregeometry>>
+
+      # get polygons from this file
+      pgons = featuregeometry(ifile, layername, featurename)
+      # print(pgons)
+      return(pgons.ExportToJson())
+#+END_SRC
+
 #+BEGIN_SRC python :tangle extractwkt.py
   <<caution>>
 
@@ -209,6 +231,7 @@ this prints the wkt of a layer/feature of a kml file
   import sys
 
   <<extractwkt>>
+  <<extractjson>>
 
   # XXX
   # it would be nice to read direct from a .kmz (zip) file.  but it
@@ -232,9 +255,10 @@ this prints the wkt of a layer/feature of a kml file
                           help="name of desired layer (in file)")
       parser.add_argument('-f', '--featurename', type=str, required=True,
                           help="name of desired feature (within layer)")
+      parser.add_argument('-t', '--type', choices=['Wkt', 'Json'], default='Wkt',
+                          help="type of output [Wkt]")
       # use "type=str" since we use the file name for ogr.Open()
-      parser.add_argument('ifile', type=str,
-                          help="file to process")
+      parser.add_argument('ifile', type=str, help="file to process")
       args = parser.parse_args();
 
       # make sure ifile is readable
@@ -242,7 +266,10 @@ this prints the wkt of a layer/feature of a kml file
           eprint("input file '%s' cannot be read" % args.ifile)
           sys.exit(2)
 
-      print(extractwkt(args.ifile, args.layername, args.featurename))
+      if (args.type == "Wkt"):
+          print(extractwkt(args.ifile, args.layername, args.featurename))
+      elif (args.type == "Json"):
+          print(extractjson(args.ifile, args.layername, args.featurename))
 
   if __name__ == "__main__":
       main(sys.argv)
@@ -448,8 +475,9 @@ colors can be found [[http://www.tayloredmktg.com/rgb/][here]].
   <Document><name><DOCNAME></name>
   """
 
-  color0 = 0xffffff
+  color0 = 0xfcbba1
   # from http://www.personal.psu.edu/cab38/ColorBrewer/ColorBrewer.html
+  # or http://colorbrewer2.org/
   # 9-class sequential PuBu
   colors = [0xfff7fb, 0xece7f2, 0xd0d1e6, 0xa6bddb, 0x74a9cf,
             0x3690c0, 0x0570b0, 0x045a8d, 0x023858]
