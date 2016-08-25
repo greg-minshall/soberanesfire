@@ -56,6 +56,8 @@ print c
 #+BEGIN_SRC python :session py  :tangle herepoly.py :results none
   <<eprint>>
 
+  import sys
+
   <<featuregeometry>>
 
   def herepoly(file, layer, feature):
@@ -94,11 +96,45 @@ print c
       ignore = ax.set_title('Polygon')
       pyplot.show()
 
-  file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
-  layer = "Soberanes"
-  feature = "Heat Perimeter"
-  herepoly(file, layer, feature)
+  def main(argv):
+      import argparse
 
+      cmd = argv[0]
+      parser = argparse.ArgumentParser(description=
+                                       "plot a feature of a layer from an ogr-readable file")
+      parser.add_argument('-l', '--layername', type=str, required=True,
+                          help="name of desired layer (in file)")
+      parser.add_argument('-f', '--featurename', type=str, required=True,
+                          help="name of desired feature (within layer)")
+      # use "type=str" since we use the file name for ogr.Open()
+      parser.add_argument('input', type=str, nargs=1)
+      args = parser.parse_args();
+
+      herepoly(args.input[0], args.layername, args.featurename)
+
+  # file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
+  # layer = "Soberanes"
+  # feature = "Heat Perimeter"
+  # herepoly(file, layer, feature)
+
+  if __name__ == "__main__":
+      main(sys.argv)
+#+END_SRC
+
+to get an arbitrary file/layer/feature into shapely, import FILE via
+gdal/ogr, convert LAYER/FEATURE to WKT, then loads() that WKT.
+
+#+BEGIN_SRC python :results output verbatim :session *py*
+  import shapely.wkt
+
+  <<extractwkt>>
+
+  wkt = extractwkt("/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml",
+      "Soberanes", "Heat Perimeter")
+
+  sh = shapely.wkt.loads(wkt)
+  for geom in sh.geoms:
+      print(i.geom_type)
 #+END_SRC
 
 ** using [[https://github.com/Toblerity/Fiona][fiona]]
@@ -223,18 +259,34 @@ this prints the wkt of a layer/feature of a kml file
 
 #+name: extractwkt
 #+BEGIN_SRC python
+  <<featuregeometry>>
+
   def extractwkt(ifile, layername, featurename):
       """returns the WKT of the geometry of feature FEATURENAME in layer
       LAYERNAME in file FILE
 
       """
-
-      <<featuregeometry>>
-
       # get polygons from this file
       pgons = featuregeometry(ifile, layername, featurename)
       # print(pgons)
       return(pgons.ExportToWkt())
+#+END_SRC
+
+#+RESULTS: extractwkt
+
+#+name: extractgml
+#+BEGIN_SRC python
+  def extractgml(ifile, layername, featurename):
+      """returns the GML of the geometry of feature FEATURENAME in layer
+  LAYERNAME in file FILE
+
+      """
+
+      <<featuregeometry>>
+
+      # get geometry from this file
+      geom = featuregeometry(ifile, layername, featurename)
+      return geom.ExportToGML()
 #+END_SRC
 
 #+name: extractjson
@@ -262,8 +314,9 @@ this prints the wkt of a layer/feature of a kml file
   import os
   import sys
 
-  <<extractwkt>>
+  <<extractgml>>
   <<extractjson>>
+  <<extractwkt>>
 
   # XXX
   # it would be nice to read direct from a .kmz (zip) file.  but it
@@ -287,7 +340,7 @@ this prints the wkt of a layer/feature of a kml file
                           help="name of desired layer (in file)")
       parser.add_argument('-f', '--featurename', type=str, required=True,
                           help="name of desired feature (within layer)")
-      parser.add_argument('-t', '--type', choices=['Wkt', 'Json'], default='Wkt',
+      parser.add_argument('-t', '--type', choices=['Wkt', 'Json', 'GML'], default='Wkt',
                           help="type of output [Wkt]")
       # use "type=str" since we use the file name for ogr.Open()
       parser.add_argument('ifile', type=str, help="file to process")
@@ -302,6 +355,8 @@ this prints the wkt of a layer/feature of a kml file
           print(extractwkt(args.ifile, args.layername, args.featurename))
       elif (args.type == "Json"):
           print(extractjson(args.ifile, args.layername, args.featurename))
+      elif (args.type == "GML"):
+          print(extractgml(args.ifile, args.layername, args.featurename))
 
   if __name__ == "__main__":
       main(sys.argv)
@@ -784,3 +839,18 @@ here's an example of how to use:
 #+BEGIN_EXAMPLE
 python xpathusing.py `ls ~/work/gis/play/IR/20160???*Soberanes*/doc.kml | sort` 2>&1 > y.kml
 #+END_EXAMPLE
+
+** [[http://geoscript.org/][geoscript]]
+
+a way of accessing JTS.  which, if GEOS is solely a downstream of JTS,
+maybe closer is better...  related to [[http://www.geotools.org/][GeoTools]].  so, download geotools
+(big) and (fink install) maven.  i needed to do
+#+BEGIN_EXAMPLE
+export JAVA_HOME=`/System/Library/Frameworks/JavaVM.framework/Versions/Current/Commands/java_home`
+#+END_EXAMPLE
+to make it work.  then
+#+BEGIN_EXAMPLE
+C:java>  mvn archetype:generate -DgroupId=org.geotools -DartifactId=tutorial -Dversion=1.0-SNAPSHOT -DarchetypeGroupId=org.apache.maven.archetypes -DarchetypeArtifactId=maven-archetype-quickstart
+#+END_EXAMPLE
+
+but, sigh, maybe it requires Java.  which i have, but ...
