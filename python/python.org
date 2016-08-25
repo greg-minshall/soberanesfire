@@ -54,13 +54,9 @@ print c
 
 #+name: herepoly
 #+BEGIN_SRC python :session py  :tangle herepoly.py :results none :shebang "#!/usr/bin/env python"
-  <<eprint>>
-
-  <<featuregeometry>>
+  <<extractjson>>
 
   def herepoly(ijson):
-      import json
-
       # from https://github.com/matplotlib/matplotlib/issues/5836
       import warnings;
       with warnings.catch_warnings():
@@ -68,22 +64,41 @@ print c
           from matplotlib import pyplot
       import sys
 
-      if ijson['type'] not in ['MultiPolygon', 'Polygon']:
-          eprint("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(ijson['type']))
-          sys.exit(2)
+      def getxy(*tuples):
+          """return x,y from a pair (x,y) or triple (x,y,z)"""
+          if len(tuples[0]) == 2:
+              (x,y) = zip(*tuples)
+          elif len(tuples[0]) == 3:
+              (x,y,z) = zip(*tuples)
+          else:
+              raise ValueError("should have been a pair or triple, but was an {0}-tuple".format(len(tuples[0])))
+          return (x,y)
 
       fig = pyplot.figure(1, figsize=(5,5), dpi=90)
       # for '111': http://stackoverflow.com/a/6981055/1527747
       # for 'aspect=1.0': http://stackoverflow.com/q/7965743/1527747
       ax = fig.add_subplot(111, aspect=1.0)
-      for pgon in range(len(ijson['coordinates'])):
-          for lring in range(len(ijson['coordinates'][pgon])):
+      if ijson['type'] == 'MultiPolygon':
+          for pgon in range(len(ijson['coordinates'])):
+              for lring in range(len(ijson['coordinates'][pgon])):
+                  # zip(*zip): http://stackoverflow.com/q/2233204/1527747 and
+                  # https://docs.python.org/3/tutorial/controlflow.html#unpacking-argument-lists
+                  # http://stackoverflow.com/a/2511319/1527747 ("it's (apply)")
+                  (x,y) = getxy(*ijson['coordinates'][pgon][lring])
+                  ignore = ax.plot(x, y, color='#000000', alpha=0.7,
+                                   linewidth=1, solid_capstyle='round', zorder=2)
+      elif ijson['type'] == 'Polygon':
+          for lring in range(len(ijson['coordinates'])):
               # zip(*zip): http://stackoverflow.com/q/2233204/1527747 and
               # https://docs.python.org/3/tutorial/controlflow.html#unpacking-argument-lists
               # http://stackoverflow.com/a/2511319/1527747 ("it's (apply)")
-              (x,y,z) = zip(*ijson['coordinates'][pgon][lring])
+              (x,y) = getxy(*ijson['coordinates'][lring])
               ignore = ax.plot(x, y, color='#000000', alpha=0.7,
                                linewidth=1, solid_capstyle='round', zorder=2)
+      else:
+          # http://stackoverflow.com/a/24065533/1527747
+          raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(ijson['type']))
+
 
       ignore = ax.set_title('Polygon')
       pyplot.show()
@@ -104,12 +119,9 @@ print c
       parser.add_argument('filename', type=str, nargs=1)
       args = parser.parse_args();
 
-      geom = featuregeometry(args.filename[0], args.layername, args.featurename)
-      ijsonstr = geom.ExportToJson()   # now have a string
-      # we could use plain eval(), but the following is safer
-      ijson = json.loads(ijsonstr) # now have a dict
+      json = extractjson(args.filename[0], args.layername, args.featurename)
 
-      herepoly(ijson)
+      herepoly(json)
 
   # file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
   # layer = "Soberanes"
@@ -231,8 +243,7 @@ print kml
         # print("there is/are %d layer(s)" % file.GetLayerCount())
         l = file.GetLayerByName(layername) # type(l) == OGRLayerH
         if l is None:
-            eprint("layer '%s' is not found in file '%s'" % (layername, filename))
-            sys.exit(3)
+            raise NameError("layer '%s' is not found in file '%s'" % (layername, filename))
         l.ResetReading()
         # find the right feature
         found = False
@@ -244,9 +255,8 @@ print kml
                     found = True
                     break;
         if not found:
-              eprint("feature name '%s' not found in layer '%s' in file '%s'" %
+              raise NameError("feature name '%s' not found in layer '%s' in file '%s'" %
                      (featurename, layername, filename))
-              sys.exit(3)
         # okay, we found the right feature.  now, find the polygon, maybe
         # a multigeometry
         geometry = feature.GetGeometryRef().Clone()
@@ -296,13 +306,15 @@ this prints the wkt of a layer/feature of a kml file
       LAYERNAME in file FILE
 
       """
+      import json
 
       <<featuregeometry>>
 
       # get polygons from this file
-      pgons = featuregeometry(ifile, layername, featurename)
-      # print(pgons)
-      return(pgons.ExportToJson())
+      geom = featuregeometry(ifile, layername, featurename)
+      # print(geom)
+      ijsonstr = geom.ExportToJson()
+      return(json.loads(ijsonstr)) # now have a dict
 #+END_SRC
 
 #+BEGIN_SRC python :tangle extractwkt.py
@@ -613,7 +625,6 @@ file formats didn't work for this.
 #+BEGIN_SRC python :tangle awklike.py
   <<caution>>
 
-  <<eprint>>                      # must be first
   import sys
 
   <<file_fragments>>
@@ -770,7 +781,6 @@ a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/
 #+BEGIN_SRC python :tangle xpathusing.py :results output verbatim
   <<caution>>
 
-  <<eprint>>                      # must be first
   import sys
 
   <<file_fragments>>
@@ -855,3 +865,14 @@ C:java>  mvn archetype:generate -DgroupId=org.geotools -DartifactId=tutorial -Dv
 #+END_EXAMPLE
 
 but, sigh, maybe it requires Java.  which i have, but ...
+
+** playing
+
+#+BEGIN_SRC python :results none :session py
+import os, sys
+import herepoly
+
+js = {'type': 'Polygon', 'coordinates': [[[1208064.271243039, 614453.958118695], [1208064.271243039, 624154.6783778917], [1219317.1067437078, 624154.6783778917], [1219317.1067437078, 614453.958118695], [1208064.271243039, 614453.958118695]]]}
+xs = herepoly.extractjson("x.gml", "Soberanes", "Heat Perimeter")
+
+#+END_SRC
