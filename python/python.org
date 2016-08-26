@@ -106,7 +106,6 @@ print c
   def main(argv):
       import sys
       import argparse
-      import json
 
       cmd = argv[0]
       parser = argparse.ArgumentParser(description=
@@ -306,7 +305,7 @@ this prints the wkt of a layer/feature of a kml file
       LAYERNAME in file FILE
 
       """
-      import json
+      import geojson
 
       <<featuregeometry>>
 
@@ -314,7 +313,7 @@ this prints the wkt of a layer/feature of a kml file
       geom = featuregeometry(ifile, layername, featurename)
       # print(geom)
       ijsonstr = geom.ExportToJson()
-      return(json.loads(ijsonstr)) # now have a dict
+      return(geojson.loads(ijsonstr)) # now have a dict
 #+END_SRC
 
 #+BEGIN_SRC python :tangle extractwkt.py
