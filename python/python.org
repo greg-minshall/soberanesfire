@@ -54,14 +54,19 @@ print c
 
 #+name: herepoly
 #+BEGIN_SRC python :session py  :tangle herepoly.py :results none :shebang "#!/usr/bin/env python"
+  import os
+
   <<extractjson>>
 
   def herepoly(ijson):
       # from https://github.com/matplotlib/matplotlib/issues/5836
+      print("{0} before warnings".format(os.times()))
       import warnings;
       with warnings.catch_warnings():
-          warnings.simplefilter("ignore"); 
+          warnings.simplefilter("ignore");
+          print("{0} before import matplotlib".format(os.times()))
           from matplotlib import pyplot
+          print("{0} after import matplotlib".format(os.times()))
       import sys
 
       def getxy(*tuples):
@@ -84,7 +89,9 @@ print c
                   # zip(*zip): http://stackoverflow.com/q/2233204/1527747 and
                   # https://docs.python.org/3/tutorial/controlflow.html#unpacking-argument-lists
                   # http://stackoverflow.com/a/2511319/1527747 ("it's (apply)")
+                  print("{0} before getxy".format(os.times()))
                   (x,y) = getxy(*ijson['coordinates'][pgon][lring])
+                  print("{0} before ax.plot".format(os.times()))
                   ignore = ax.plot(x, y, color='#000000', alpha=0.7,
                                    linewidth=1, solid_capstyle='round', zorder=2)
       elif ijson['type'] == 'Polygon':
@@ -104,7 +111,7 @@ print c
       pyplot.show()
 
   def main(argv):
-      import sys
+      import os, sys
       import argparse
 
       cmd = argv[0]
@@ -118,7 +125,9 @@ print c
       parser.add_argument('filename', type=str, nargs=1)
       args = parser.parse_args();
 
+      print("{0} before extractjson".format(os.times()))
       json = extractjson(args.filename[0], args.layername, args.featurename)
+      print("{0} after extractjson".format(os.times()))
 
       herepoly(json)
 
@@ -237,6 +246,7 @@ print kml
         import osgeo
         from osgeo import gdal
         from osgeo import ogr
+
         file = ogr.Open(filename)
         # print("this is %s data" % file.GetDriver().GetName())
         # print("there is/are %d layer(s)" % file.GetLayerCount())
@@ -316,7 +326,23 @@ this prints the wkt of a layer/feature of a kml file
       return(geojson.loads(ijsonstr)) # now have a dict
 #+END_SRC
 
-#+BEGIN_SRC python :tangle extractwkt.py
+#+name: extractshape
+#+BEGIN_SRC python
+  def extractshape(ifile, layer, feature):
+      """returns a Shapely object of feature FEATURE in layer LAYER in file IFILE"""
+      import geojson
+      import shapely.geometry
+
+      <<extractjson>>
+
+      # get the json
+      json = extractjson(ifile, layer, feature)
+
+      # convert it to shapely and return
+      return shapely.geometry.shape(json)
+#+END_SRC
+
+#+BEGIN_SRC python :tangle extractwkt.py :shebang "#!/usr/bin/env python"
   <<caution>>
 
   <<eprint>>
@@ -328,6 +354,7 @@ this prints the wkt of a layer/feature of a kml file
   <<extractgml>>
   <<extractjson>>
   <<extractwkt>>
+  <<extractshape>>
 
   # XXX
   # it would be nice to read direct from a .kmz (zip) file.  but it
@@ -351,7 +378,7 @@ this prints the wkt of a layer/feature of a kml file
                           help="name of desired layer (in file)")
       parser.add_argument('-f', '--featurename', type=str, required=True,
                           help="name of desired feature (within layer)")
-      parser.add_argument('-t', '--type', choices=['Wkt', 'Json', 'GML'], default='Wkt',
+      parser.add_argument('-t', '--type', choices=['Wkt', 'Json', 'GML', 'Shape'], default='Wkt',
                           help="type of output [Wkt]")
       # use "type=str" since we use the file name for ogr.Open()
       parser.add_argument('ifile', type=str, help="file to process")
@@ -362,12 +389,14 @@ this prints the wkt of a layer/feature of a kml file
           eprint("input file '%s' cannot be read" % args.ifile)
           sys.exit(2)
 
-      if (args.type == "Wkt"):
+      if args.type == "Wkt":
           print(extractwkt(args.ifile, args.layername, args.featurename))
-      elif (args.type == "Json"):
+      elif args.type == "Json":
           print(extractjson(args.ifile, args.layername, args.featurename))
-      elif (args.type == "GML"):
+      elif args.type == "GML":
           print(extractgml(args.ifile, args.layername, args.featurename))
+      elif args.type == 'Shape':
+          print(extractshape(args.ifile, args.layername, args.featurename))
 
   if __name__ == "__main__":
       main(sys.argv)
@@ -375,7 +404,7 @@ this prints the wkt of a layer/feature of a kml file
 
 ** differencewkt.py
 
-#+BEGIN_SRC python :tangle differencewkt.py
+#+BEGIN_SRC python :tangle differencewkt.py :shebang "#!/usr/bin/env python"
   <<caution>>
 
   from __future__ import print_function # for eprint() below
@@ -621,7 +650,7 @@ without worrying much about GIS APIs, basically, it could be an awk
 script.  unfortunately, when a new plane was put into service, the new
 file formats didn't work for this.
 
-#+BEGIN_SRC python :tangle awklike.py
+#+BEGIN_SRC python :tangle awklike.py :shebang "#!/usr/bin/env python"
   <<caution>>
 
   import sys
@@ -777,7 +806,7 @@ xml2 < ~/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml | less
 
 a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/xpath_syntax.asp][w3schools.com]]
 
-#+BEGIN_SRC python :tangle xpathusing.py :results output verbatim
+#+BEGIN_SRC python :tangle xpathusing.py :results output verbatim :shebang "#!/usr/bin/env python"
   <<caution>>
 
   import sys
@@ -875,3 +904,65 @@ js = {'type': 'Polygon', 'coordinates': [[[1208064.271243039, 614453.958118695],
 xs = herepoly.extractjson("x.gml", "Soberanes", "Heat Perimeter")
 
 #+END_SRC
+
+oof.  importing matplotlib takes at least 1 second of user time
+#+BEGIN_EXAMPLE
+bash greg-minshalls-mbp-2: {1308} ./herepoly.py -l OGRGeoJSON -f "Heat Perimeter" x.json 
+(0.01, 0.01, 0.0, 0.0, 1472203897.95) before extractjson
+(0.04, 0.02, 0.0, 0.0, 1472203898.0) after extractjson
+(0.04, 0.02, 0.0, 0.0, 1472203898.0) before warnings
+(0.04, 0.02, 0.0, 0.0, 1472203898.0) before import matplotlib
+(1.05, 0.22, 0.08, 0.02, 1472203899.41) after import matplotlib
+(1.1, 0.23, 0.08, 0.02, 1472203899.47) before getxy
+(1.1, 0.23, 0.08, 0.02, 1472203899.47) before ax.plot
+(1.1, 0.23, 0.08, 0.02, 1472203899.47) before getxy
+(1.1, 0.23, 0.08, 0.02, 1472203899.47) before ax.plot
+#+END_EXAMPLE
+from os.times().  (the results are pretty stable: 1 second user; .2
+seconds system)
+
+otoh, matplotlib plotting itself is very fast.
+
+** gnuplot?
+
+a couple of packages.  Gnuplot (fink: gnuplot-py27) seems nice.  otoh,
+it doesn't support what i need "natively", so maybe [[https://github.com/jfindlay/gp.py][gp.py]] will be
+better?
+
+#+BEGIN_SRC python
+  import gp
+
+  g = gp.GP(term='x11')
+
+  g.write("set xrange [-1.5:4.5]")
+  g.write("set yrange [-3:3]")
+  g.write("set size ratio -1")
+
+  g.write("a = 1.0/3")
+  g.write(" \
+  set object 1 polygon from \
+      -1, 1 to \
+       0, 1 to \
+       0, a to \
+       1, 1 to \
+       1,-1 to \
+       0,-a to \
+       0,-1 to \
+      -1,-1 to \
+      -1, 1""")
+
+  g.write("set object 1 fc rgb '#000000' fillstyle solid lw 0")
+
+  g.write("set parametric")
+  g.write("set trange [-pi/6:pi/6]")
+  g.write("fx(t,r) = r*cos(t)")
+  g.write("fy(t,r) = r*sin(t)")
+
+  g.write("plot fx(t,2),fy(t,2) with lines ls 1, \
+       fx(t,3),fy(t,3) with lines ls 1, \
+       fx(t,4),fy(t,4) with lines ls 1")
+#+END_SRC
+
+#+RESULTS:
+: None
+
