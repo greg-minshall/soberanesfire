@@ -929,7 +929,7 @@ a couple of packages.  Gnuplot (fink: gnuplot-py27) seems nice.  otoh,
 it doesn't support what i need "natively", so maybe [[https://github.com/jfindlay/gp.py][gp.py]] will be
 better?
 
-#+BEGIN_SRC python
+#+BEGIN_SRC python :results none
   import gp
 
   g = gp.GP(term='x11')
