@@ -989,7 +989,7 @@ better?
 #+RESULTS:
 : None
 
-#+BEGIN_SRC python :session py
+#+BEGIN_SRC python
 import herepoly
 import extractwkt
 
@@ -999,4 +999,5 @@ herepoly.herepolyShape(sh)
 #+END_SRC
 
 #+RESULTS:
+: None
 
