@@ -58,15 +58,42 @@ print c
 
   <<extractjson>>
 
-  def herepoly(ijson):
+  def herepolyShape(shape):
+      """prints the *EXTERIOR* of SHAPE""" # XXX to interior cutouts
       # from https://github.com/matplotlib/matplotlib/issues/5836
-      print("{0} before warnings".format(os.times()))
       import warnings;
       with warnings.catch_warnings():
           warnings.simplefilter("ignore");
-          print("{0} before import matplotlib".format(os.times()))
           from matplotlib import pyplot
-          print("{0} after import matplotlib".format(os.times()))
+      import sys
+
+      fig = pyplot.figure(1, figsize=(5,5), dpi=90)
+      # for '111': http://stackoverflow.com/a/6981055/1527747
+      # for 'aspect=1.0': http://stackoverflow.com/q/7965743/1527747
+      ax = fig.add_subplot(111, aspect=1.0)
+      if shape.type == 'MultiPolygon':
+          for pgon in shape.geoms:
+              (x,y,z) = zip(*pgon.exterior.coords)
+              ignore = ax.plot(x, y, color='#000000', alpha=0.7,
+                               linewidth=1, solid_capstyle='round', zorder=2)
+      elif shape.type == 'Polygon':
+          (x,y,z) = zip(*shape.exterior.coords)
+          ignore = ax.plot(x, y, color='#000000', alpha=0.7,
+                           linewidth=1, solid_capstyle='round', zorder=2)
+      else:
+          # http://stackoverflow.com/a/24065533/1527747
+          raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
+
+
+      ignore = ax.set_title('Polygon')
+      pyplot.show()
+
+  def herepolyJson(ijson):
+      # from https://github.com/matplotlib/matplotlib/issues/5836
+      import warnings;
+      with warnings.catch_warnings():
+          warnings.simplefilter("ignore");
+          from matplotlib import pyplot
       import sys
 
       def getxy(*tuples):
@@ -89,9 +116,7 @@ print c
                   # zip(*zip): http://stackoverflow.com/q/2233204/1527747 and
                   # https://docs.python.org/3/tutorial/controlflow.html#unpacking-argument-lists
                   # http://stackoverflow.com/a/2511319/1527747 ("it's (apply)")
-                  print("{0} before getxy".format(os.times()))
                   (x,y) = getxy(*ijson['coordinates'][pgon][lring])
-                  print("{0} before ax.plot".format(os.times()))
                   ignore = ax.plot(x, y, color='#000000', alpha=0.7,
                                    linewidth=1, solid_capstyle='round', zorder=2)
       elif ijson['type'] == 'Polygon':
@@ -125,9 +150,7 @@ print c
       parser.add_argument('filename', type=str, nargs=1)
       args = parser.parse_args();
 
-      print("{0} before extractjson".format(os.times()))
       json = extractjson(args.filename[0], args.layername, args.featurename)
-      print("{0} after extractjson".format(os.times()))
 
       herepoly(json)
 
@@ -965,4 +988,15 @@ better?
 
 #+RESULTS:
 : None
+
+#+BEGIN_SRC python :session py
+import herepoly
+import extractwkt
+
+sh = extractwkt.extractshape("x.gml", "Soberanes", "Heat Perimeter")
+herepoly.herepolyShape(sh)
+
+#+END_SRC
+
+#+RESULTS:
 
