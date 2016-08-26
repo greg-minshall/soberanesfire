@@ -52,43 +52,12 @@ c = a.difference(b)
 print c
 #+END_SRC
 
-#+name: herepoly
-#+BEGIN_SRC python :session py  :tangle herepoly.py :results none :shebang "#!/usr/bin/env python"
-  import os
 
-  <<extractjson>>
+#+name: shPolyJson
+#+BEGIN_SRC python
+  def shPolyJson(ijson):
+      """plot the *exterior*** of a geojson polygon"""
 
-  def herepolyShape(shape):
-      """prints the *EXTERIOR* of SHAPE""" # XXX to interior cutouts
-      # from https://github.com/matplotlib/matplotlib/issues/5836
-      import warnings;
-      with warnings.catch_warnings():
-          warnings.simplefilter("ignore");
-          from matplotlib import pyplot
-      import sys
-
-      fig = pyplot.figure(1, figsize=(5,5), dpi=90)
-      # for '111': http://stackoverflow.com/a/6981055/1527747
-      # for 'aspect=1.0': http://stackoverflow.com/q/7965743/1527747
-      ax = fig.add_subplot(111, aspect=1.0)
-      if shape.type == 'MultiPolygon':
-          for pgon in shape.geoms:
-              (x,y,z) = zip(*pgon.exterior.coords)
-              ignore = ax.plot(x, y, color='#000000', alpha=0.7,
-                               linewidth=1, solid_capstyle='round', zorder=2)
-      elif shape.type == 'Polygon':
-          (x,y,z) = zip(*shape.exterior.coords)
-          ignore = ax.plot(x, y, color='#000000', alpha=0.7,
-                           linewidth=1, solid_capstyle='round', zorder=2)
-      else:
-          # http://stackoverflow.com/a/24065533/1527747
-          raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
-
-
-      ignore = ax.set_title('Polygon')
-      pyplot.show()
-
-  def herepolyJson(ijson):
       # from https://github.com/matplotlib/matplotlib/issues/5836
       import warnings;
       with warnings.catch_warnings():
@@ -134,6 +103,47 @@ print c
 
       ignore = ax.set_title('Polygon')
       pyplot.show()
+#+END_SRC
+
+#+name: shPolyShape
+#+BEGIN_SRC python
+  def shPolyShape(shape):
+      """prints the *EXTERIOR* of SHAPE""" # XXX to interior cutouts
+      # from https://github.com/matplotlib/matplotlib/issues/5836
+      import warnings;
+      with warnings.catch_warnings():
+          warnings.simplefilter("ignore");
+          from matplotlib import pyplot
+      import sys
+
+      fig = pyplot.figure(1, figsize=(5,5), dpi=90)
+      # for '111': http://stackoverflow.com/a/6981055/1527747
+      # for 'aspect=1.0': http://stackoverflow.com/q/7965743/1527747
+      ax = fig.add_subplot(111, aspect=1.0)
+      if shape.type == 'MultiPolygon':
+          for pgon in shape.geoms:
+              (x,y,z) = zip(*pgon.exterior.coords)
+              ignore = ax.plot(x, y, color='#000000', alpha=0.7,
+                               linewidth=1, solid_capstyle='round', zorder=2)
+      elif shape.type == 'Polygon':
+          (x,y,z) = zip(*shape.exterior.coords)
+          ignore = ax.plot(x, y, color='#000000', alpha=0.7,
+                           linewidth=1, solid_capstyle='round', zorder=2)
+      else:
+          # http://stackoverflow.com/a/24065533/1527747
+          raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
+
+
+      ignore = ax.set_title('Polygon')
+      pyplot.show()
+#+END_SRC
+
+#+name: shPoly
+#+BEGIN_SRC python :session py  :tangle shpoly :results none :shebang "#!/usr/bin/env python"
+  import os
+
+  <<extractshape>>
+  <<shPolyShape>>
 
   def main(argv):
       import os, sys
@@ -150,14 +160,14 @@ print c
       parser.add_argument('filename', type=str, nargs=1)
       args = parser.parse_args();
 
-      json = extractjson(args.filename[0], args.layername, args.featurename)
+      shape = extractshape(args.filename[0], args.layername, args.featurename)
 
-      herepoly(json)
+      shPolyShape(shape)
 
   # file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
   # layer = "Soberanes"
   # feature = "Heat Perimeter"
-  # herepoly(file, layer, feature)
+  # shPoly(file, layer, feature)
 
   if __name__ == "__main__":
       import sys
@@ -365,7 +375,7 @@ this prints the wkt of a layer/feature of a kml file
       return shapely.geometry.shape(json)
 #+END_SRC
 
-#+BEGIN_SRC python :tangle extractwkt.py :shebang "#!/usr/bin/env python"
+#+BEGIN_SRC python :tangle extractwkt :shebang "#!/usr/bin/env python"
   <<caution>>
 
   <<eprint>>
@@ -427,7 +437,7 @@ this prints the wkt of a layer/feature of a kml file
 
 ** differencewkt.py
 
-#+BEGIN_SRC python :tangle differencewkt.py :shebang "#!/usr/bin/env python"
+#+BEGIN_SRC python :tangle differencewkt :shebang "#!/usr/bin/env python"
   <<caution>>
 
   from __future__ import print_function # for eprint() below
@@ -673,7 +683,7 @@ without worrying much about GIS APIs, basically, it could be an awk
 script.  unfortunately, when a new plane was put into service, the new
 file formats didn't work for this.
 
-#+BEGIN_SRC python :tangle awklike.py :shebang "#!/usr/bin/env python"
+#+BEGIN_SRC python :tangle awklike :shebang "#!/usr/bin/env python"
   <<caution>>
 
   import sys
@@ -829,7 +839,7 @@ xml2 < ~/work/gis/play/IR/20160812_c0730_Soberanes_Aircraft3_All/doc.kml | less
 
 a good simple reference for xpath expressions at [[http://www.w3schools.com/xsl/xpath_syntax.asp][w3schools.com]]
 
-#+BEGIN_SRC python :tangle xpathusing.py :results output verbatim :shebang "#!/usr/bin/env python"
+#+BEGIN_SRC python :tangle xpathusing :results output verbatim :shebang "#!/usr/bin/env python"
   <<caution>>
 
   import sys
@@ -921,16 +931,16 @@ but, sigh, maybe it requires Java.  which i have, but ...
 
 #+BEGIN_SRC python :results none :session py
 import os, sys
-import herepoly
+import shPoly
 
 js = {'type': 'Polygon', 'coordinates': [[[1208064.271243039, 614453.958118695], [1208064.271243039, 624154.6783778917], [1219317.1067437078, 624154.6783778917], [1219317.1067437078, 614453.958118695], [1208064.271243039, 614453.958118695]]]}
-xs = herepoly.extractjson("x.gml", "Soberanes", "Heat Perimeter")
+xs = shPoly.extractjson("x.gml", "Soberanes", "Heat Perimeter")
 
 #+END_SRC
 
 oof.  importing matplotlib takes at least 1 second of user time
 #+BEGIN_EXAMPLE
-bash greg-minshalls-mbp-2: {1308} ./herepoly.py -l OGRGeoJSON -f "Heat Perimeter" x.json 
+bash greg-minshalls-mbp-2: {1308} ./shPoly.py -l OGRGeoJSON -f "Heat Perimeter" x.json 
 (0.01, 0.01, 0.0, 0.0, 1472203897.95) before extractjson
 (0.04, 0.02, 0.0, 0.0, 1472203898.0) after extractjson
 (0.04, 0.02, 0.0, 0.0, 1472203898.0) before warnings
@@ -990,11 +1000,11 @@ better?
 : None
 
 #+BEGIN_SRC python
-import herepoly
+import shPoly
 import extractwkt
 
 sh = extractwkt.extractshape("x.gml", "Soberanes", "Heat Perimeter")
-herepoly.herepolyShape(sh)
+shPoly.shPolyShape(sh)
 
 #+END_SRC
 
