@@ -56,7 +56,7 @@ print c
 #+name: shPolyJson
 #+BEGIN_SRC python
   def shPolyJson(ijson):
-      """plot the *exterior*** of a geojson polygon"""
+      """plot the *exterior*** of a geojson polygon (using matplotlib)"""
 
       # from https://github.com/matplotlib/matplotlib/issues/5836
       import warnings;
@@ -108,7 +108,7 @@ print c
 #+name: shPolyShape
 #+BEGIN_SRC python
   def shPolyShape(shape):
-      """prints the *EXTERIOR* of SHAPE""" # XXX to interior cutouts
+      """prints the *EXTERIOR* of SHAPE (using matplotlib)""" # XXX to interior cutouts
       # from https://github.com/matplotlib/matplotlib/issues/5836
       import warnings;
       with warnings.catch_warnings():
@@ -143,7 +143,7 @@ print c
   import os
 
   <<extractshape>>
-  <<shPolyShape>>
+  <<GpShape>>
 
   def main(argv):
       import os, sys
@@ -156,13 +156,16 @@ print c
                           help="name of desired layer (in file)")
       parser.add_argument('-f', '--featurename', type=str, required=True,
                           help="name of desired feature (within layer)")
+      parser.add_argument('--device', type=str, default=None,
+                          help='device on which to plot (gnuplot "set terminal")')
       # use "type=str" since we use the file name for ogr.Open()
       parser.add_argument('filename', type=str, nargs=1)
       args = parser.parse_args();
 
+      gp = GpShape(args.device)
       shape = extractshape(args.filename[0], args.layername, args.featurename)
 
-      shPolyShape(shape)
+      gp.add(shape)
 
   # file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
   # layer = "Soberanes"
@@ -921,7 +924,7 @@ in other applications.
   <<eprint>>
   <<shPolyJson>>
   <<shPolyShape>>
-  <<shPoly>>                      # XXX
+  <<shPoly>>
   <<featuregeometry>>
   <<extractwkt>>
   <<extractgml>>
@@ -1022,13 +1025,18 @@ better?
       """plotting Shapely objects using gnuplot"""
 
       def __init__(self, term='x11'):
-          gp.GP.__init__(self, term=term)
-          self.__reset__()
+          if term == None and term != "":
+              gp.GP.__init__(self)
+          else:
+              gp.GP.__init__(self, term=term)
+          self.reset()
           self.__setdefaults__()
 
-      def __reset__(self):
+      def reset(self):
           self.objid = 0
+          gp.GP.write(self, "reset")
           gp.GP.write(self, "set size ratio -1")
+          gp.GP.write(self, "set key outside")
           self.minx = self.miny = self.maxx = self.maxy = None
           self.reppoint = None    # need a representative point for
                                   # plotting a blank page
@@ -1195,15 +1203,4 @@ better?
           else:
               # http://stackoverflow.com/a/24065533/1527747
               raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
-#+END_SRC
-
-#+BEGIN_SRC python :tangle GpShape.py
-  <<GpShape>>
-  import ggmlib
-
-  x = GpShape(term="x11")
-  sh = ggmlib.extractshape("x.gml", "Soberanes", "Heat Perimeter")
-
-  x.add(sh)
-
 #+END_SRC
