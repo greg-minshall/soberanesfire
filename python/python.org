@@ -1057,8 +1057,7 @@ better?
           defs = { 'fillstyle': "empty",
                    'fillcolor': "rgb 0x000000",
                    'transparency': 1,
-                   'border': "noborder",
-                   'linetype': 1,
+                   'border': "border",
                    'linecolor': "rgb 0x000000",
                    'linewidth': 1
           }
@@ -1142,9 +1141,8 @@ better?
           else:
               results += " " + defs['border']
               # linestyle (only if a border)
-              if {defs['linetype'], defs['linecolor'], defs['linewidth']} != set([""]):
+              if {defs['linecolor'], defs['linewidth']} != set([""]):
                   # something isn't blank
-                  results += ifel('linetype', defs['linetype'])
                   results += ifel('linecolor', defs['linecolor'])
                   results += ifel('linewidth', defs['linewidth'])
           return results
@@ -1194,16 +1192,20 @@ better?
           #    pass
           #elif shape.type == 'Line':
           #    pass
-          elif shape.type == 'Polygon': # gp.GP.write(self, ...)
+          elif shape.type == 'Polygon': # gp.GP.write(self, ...):
               if self.reppoint == None:
                   self.reppoint = shape.exterior.coords[0]
               self.__minmax__(shape.exterior.coords)
               outstr = self.__rewrite__(shape.exterior.coords, ", ", " to ")
-              # gp.py's write() call sleeps here with the comment
-              # "gnuplot actions are nonblocking"
-              # so, we short cut that here
+              # gp.py's write() call sleeps here (for O(size of string)
+              # with the comment "gnuplot actions are nonblocking" so,
+              # we short cut that here when writing out (potentialy)
+              # thousands of points
               self.stdin.write("set object {i} polygon from {s}\n".format(i=self.objid,
                                                                           s=outstr))
+              # set the style for that object
+              gp.GP.write(self, "set object {i} {o}".format(i=self.objid,
+                                                            o=self.__stylespec__(**kwargs)))
           else:
               # http://stackoverflow.com/a/24065533/1527747
               raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
@@ -1219,4 +1221,5 @@ better?
           # "How do I produce blank output page?"
           # http://gnuplot.info/faq/faq.html#x1-760006.9
           gp.GP.write(self, "plot [][] {0}".format(self.reppoint))
+
 #+END_SRC
