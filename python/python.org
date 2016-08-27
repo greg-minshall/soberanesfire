@@ -158,14 +158,25 @@ print c
                           help="name of desired feature (within layer)")
       parser.add_argument('--device', type=str, default=None,
                           help='device on which to plot (gnuplot "set terminal")')
+      parser.add_argument('--output', type=str, default=None,
+                          help="name of output file (for device=png, etc.)")
       # use "type=str" since we use the file name for ogr.Open()
       parser.add_argument('filename', type=str, nargs=1)
       args = parser.parse_args();
 
       gp = GpShape(args.device)
+      if (args.output):
+          gp.write('set output "{0}"'.format(args.output))
       shape = extractshape(args.filename[0], args.layername, args.featurename)
 
       gp.add(shape)
+      # a problem is that when this process terminates, the plot window
+      # tends to disappear.  the following, in the case of running under
+      # gp.py under python, leaves the window up (and still tracking
+      # mouse movements).  in theory this *shouldn't* work, but however
+      # python closes its subprocess seems to leave the plot working.
+      # well, at least for term=x11.
+      gp.write("pause mouse") # leave window running XXX
 
   # file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
   # layer = "Soberanes"
@@ -1041,16 +1052,7 @@ better?
           self.reppoint = None    # need a representative point for
                                   # plotting a blank page
 
-      # i don't want to duplicate all of gnuplot's parameters, as a
-      # "power user" can always just to g.write("...").  but, some
-      # things are fairly common.
 
-      # typical parameters: fill; fillcolor; linewidth; linecolor;
-      # linestyle; transparency
-
-      # so, plan is to have defaults from "compile" time, the ability to
-      # change the defaults (for subsequent calls), and the ability to
-      # specify a different value on each invocation of add)
       def __setdefaults__(self):
           defs = { 'fillstyle': "empty",
                    'fillcolor': "rgb 0x000000",
@@ -1064,7 +1066,18 @@ better?
 
       def setdefaults(self, **kwargs):
           """set one or more defaults for plotting; complex defaults should be
-  specified as a single string (e.g., linecolor="rgbcolor 0x000000")
+          specified as a single string (e.g., linecolor="rgbcolor
+          0x000000").
+
+          i don't want to duplicate all of gnuplot's parameters, since a
+          "power user" can always just to g.write("...").  but, some
+          things are fairly common.  use getdefaults() to see the
+          defaults.
+
+          so, plan is to have defaults from "compile" time, the ability
+          to change the defaults (for subsequent calls this session),
+          and the ability to specify a different value on each
+          invocation of add)
 
           """
           # from Gnuplot.py's set()
