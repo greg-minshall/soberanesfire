@@ -170,13 +170,6 @@ print c
       shape = extractshape(args.filename[0], args.layername, args.featurename)
 
       gp.add(shape)
-      # a problem is that when this process terminates, the plot window
-      # tends to disappear.  the following, in the case of running under
-      # gp.py under python, leaves the window up (and still tracking
-      # mouse movements).  in theory this *shouldn't* work, but however
-      # python closes its subprocess seems to leave the plot working.
-      # well, at least for term=x11.
-      gp.write("pause mouse") # leave window running XXX
 
   # file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
   # layer = "Soberanes"
@@ -1048,18 +1041,25 @@ better?
           gp.GP.write(self, "reset")
           gp.GP.write(self, "set size ratio -1")
           gp.GP.write(self, "set key outside")
+          # https://groups.google.com/forum/#!topic/comp.graphics.apps.gnuplot/uPJ7oGaEC8o
+          gp.GP.write(self, "unset border")
+          gp.GP.write(self, "unset xtics")
+          gp.GP.write(self, "unset ytics")
           self.minx = self.miny = self.maxx = self.maxy = None
           self.reppoint = None    # need a representative point for
                                   # plotting a blank page
+
+
 
 
       def __setdefaults__(self):
           defs = { 'fillstyle': "empty",
                    'fillcolor': "rgb 0x000000",
                    'transparency': 1,
-                   'border': "border",
+                   'border': "off",
                    'linecolor': "rgb 0x000000",
-                   'linewidth': 1
+                   'linewidth': 1,
+                   'legend': "off",
           }
           self.__defaults__ = defs;
 
@@ -1102,7 +1102,7 @@ better?
                       raise NameError("getdefaults: no default {0}".format(k))
               return results
 
-      def __stylespec__(self, **kwargs):
+      def __stylespec__(self, defs):
           """from defaults and options passed on call, put together a valid
   style spec
 
@@ -1114,12 +1114,6 @@ better?
               else:
                   return " {k} {v}".format(k=k,v=v)
 
-          defs = self.__defaults__
-          for (k,v) in kwargs.items():
-              try:
-                  defs[k] = v
-              except:
-                  raise NameError("unknown option {0}; use getdefaults() for list".format(k))
           # now we have a complete list of options, turn them into a
           # style list.
           results = ""
@@ -1135,16 +1129,12 @@ better?
                                                                    t=defs['transparency'])
               else:
                   results += " " + defs['fillstyle']
-          # including border
-          if defs['border'] == 'noborder':
-              results += " noborder"
-          else:
-              results += " " + defs['border']
-              # linestyle (only if a border)
-              if {defs['linecolor'], defs['linewidth']} != set([""]):
-                  # something isn't blank
-                  results += ifel('linecolor', defs['linecolor'])
-                  results += ifel('linewidth', defs['linewidth'])
+          # linestyle (only if a border)
+          if {defs['linecolor'], defs['linewidth']} != set([""]):
+              # something isn't blank
+              results += " border"
+              results += ifel('linecolor', defs['linecolor'])
+              results += ifel('linewidth', defs['linewidth'])
           return results
 
 
@@ -1179,7 +1169,7 @@ better?
                   raise TypeError("internal error: type s/b tuple or str")
           return reduce(doit, pairs)
 
-      def __add__(self, shape, **kwargs):
+      def __add__(self, shape, defs):
           """do the work to actually add shapely SHAPE geometries to the plot"""
 
           self.objid += 1         # make sure this happens
@@ -1187,7 +1177,7 @@ better?
                             'MultiPolygon', 'GeometryCollection']:
               self.objid -= 1     # (but we don't want it here)
               for geom in shape.geoms:
-                  self.__add__(geom)  # recurse for each sub-geometry
+                  self.__add__(geom, defs)  # recurse for each sub-geometry
           #elif shape.type == 'Point':   XXX
           #    pass
           #elif shape.type == 'Line':
@@ -1205,7 +1195,7 @@ better?
                                                                           s=outstr))
               # set the style for that object
               gp.GP.write(self, "set object {i} {o}".format(i=self.objid,
-                                                            o=self.__stylespec__(**kwargs)))
+                                                            o=self.__stylespec__(defs)))
           else:
               # http://stackoverflow.com/a/24065533/1527747
               raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
@@ -1213,13 +1203,31 @@ better?
       def add(self, shape, **kwargs):
           """plot the shapely SHAPE object"""
 
-          self.__add__(shape, **kwargs)
-          gp.GP.write(self, "set xrange [{x}:{X}]".format(x=self.minx,
-                                                          X=self.maxx))
-          gp.GP.write(self, "set yrange [{y}:{Y}]".format(y=self.miny,
-                                                          Y=self.maxy))
+          defs = self.__defaults__
+          for (k,v) in kwargs.items():
+              try:
+                  defs[k] = v
+              except:
+                  raise NameError("unknown option {0}; use getdefaults() for list".format(k))
+
+          self.__add__(shape, defs)
+
+          if defs['legend'] != None and defs['legend'] != "":
+              gp.GP.write(self, "set key {0}".format(defs['legend']))
+
+          gp.GP.write(self, "set xrange [{x}:{X}]".format(x=self.minx, X=self.maxx))
+          gp.GP.write(self, "set yrange [{y}:{Y}]".format(y=self.miny, Y=self.maxy))
+
+
           # "How do I produce blank output page?"
           # http://gnuplot.info/faq/faq.html#x1-760006.9
           gp.GP.write(self, "plot [][] {0}".format(self.reppoint))
-
+          # a problem is that when this process terminates, the plot
+          # window tends to disappear.  the following, in the case of
+          # running under gp.py under python, leaves the window up (and
+          # still tracking mouse movements).  in theory this *shouldn't*
+          # work, but in whatever way python closes its subprocess, it
+          # seems to leave the plot working.  well, at least for
+          # term=x11.
+          gp.GP.write(self, "pause mouse") # leave window running XXX
 #+END_SRC
