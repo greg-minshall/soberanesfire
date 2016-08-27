@@ -1229,12 +1229,12 @@ better?
           # "How do I produce blank output page?"
           # http://gnuplot.info/faq/faq.html#x1-760006.9
           gp.GP.write(self, "plot [][] {0}".format(self.reppoint))
+
           # a problem is that when this process terminates, the plot
           # window tends to disappear.  the following, in the case of
           # running under gp.py under python, leaves the window up (and
-          # still tracking mouse movements).  in theory this *shouldn't*
-          # work, but in whatever way python closes its subprocess, it
-          # seems to leave the plot working.  well, at least for
-          # term=x11.
-          gp.GP.write(self, "pause mouse") # leave window running XXX
+          # still tracking mouse movements).
+          gp.GP.write(self, "pause mouse close") # leave window running
+          # and, wait for window to close
+          gp.GP.read(self)
 #+END_SRC
