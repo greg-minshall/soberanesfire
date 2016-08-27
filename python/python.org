@@ -1033,15 +1033,25 @@ better?
           self.reppoint = None    # need a representative point for
                                   # plotting a blank page
 
+      # i don't want to duplicate all of gnuplot's parameters, as a
+      # "power user" can always just to g.write("...").  but, some
+      # things are fairly common.
+
+      # typical parameters: fill; fillcolor; linewidth; linecolor;
+      # linestyle; transparency
+
+      # so, plan is to have defaults from "compile" time, the ability to
+      # change the defaults (for subsequent calls), and the ability to
+      # specify a different value on each invocation of add)
       def __setdefaults__(self):
-          defs = [ ('fillstyle', "empty"),
-                   ('fillcolor', "rgb 0x000000"),
-                   ('transparency', "0"),
-                   ('linetype', "1"),
-                   ('linewidth', "1"),
-                   ('linecolor', "rgb 0x000000"),
-                   ('border', "border")
-          ]
+          defs = { 'fillstyle': "empty",
+                   'fillcolor': "rgb 0x000000",
+                   'transparency': 1,
+                   'border': "noborder",
+                   'linetype': 1,
+                   'linecolor': "rgb 0x000000",
+                   'linewidth': 1
+          }
           self.__defaults__ = defs;
 
       def setdefaults(self, **kwargs):
@@ -1055,6 +1065,9 @@ better?
                   type = self.defaults[k]
               except:
                   raise NameError("setdefaults: no default {0}".format(k))
+              if type(v) != type(self.__defaults__[k]):
+                  raise TypeError("key should be of type {0}, but {1} (of type {2}) passed".format(
+                      type(self.__defaults__[k], v, type(v))))
               self.__defaults__[k] = v
 
       def getdefaults(self, *args):
@@ -1069,9 +1082,10 @@ better?
                       raise NameError("getdefaults: no default {0}".format(k))
               return results
 
-      def __options__(self, **kwargs):
+      def __stylespec__(self, **kwargs):
           """from defaults and options passed on call, put together a valid
-  style list
+  style spec
+
           """
           defs = self.__defaults__
           for (k,v) in kwargs.items():
@@ -1080,10 +1094,34 @@ better?
               except:
                   raise NameError("unknown option {0}; use getdefaults() for list".format(k))
           # now we have a complete list of options, turn them into a
-          # style list.  someday may want to scan the list to go from
-          # "generic" to "gnuplot".  but, we don't need that yet.
+          # style list.
+          results = "set style "
+          # ternary operator: http://stackoverflow.com/a/394814/1527747
 
-          results = self.__rewrite__(defs, " ", " ")
+          # fillstyle
+          if defs['fillstyle'] == "none":
+              results += " fill empty"
+          else:
+              results += " fillstyle"
+              if defs['transparency'] != 1:
+                  results += " transparent {s} density {t}".format(s=defs['fillstyle'],
+                                                                   t=defs['transparency'])
+              else:
+                  results += " " + defs['fillstyle']
+
+                  results += " " + defs['fillstyle']
+          # including border
+          if defs['border'] == 'noborder':
+              results += " noborder"
+          else:
+              results += " " + defs['border']
+
+          # linestyle
+          results += " linestyle"
+          results += " linetype " + defs['linetype']
+          results += " linecolor " + defs['linecolor']
+          results += " linewidth " + defs['linewidth']
+
           print results
           return results
 
@@ -1119,16 +1157,6 @@ better?
                   raise TypeError("internal error: type s/b tuple or str")
           return reduce(doit, pairs)
 
-      # i don't want to duplicate all of gnuplot's parameters, as a
-      # "power user" can always just to g.write("...").  but, some
-      # things are fairly common.
-
-      # typical parameters: fill; fillcolor; linewidth; linecolor;
-      # linestyle; transparency
-
-      # so, plan is to have defaults from "compile" time, the ability to
-      # change the defaults (for subsequent calls), and the ability to
-      # specify a different value on each invocation of add)
       def add(self, shape, **kwargs):
           """add shapely SHAPE to the plot"""
 
@@ -1157,7 +1185,7 @@ better?
               gp.GP.write(self, "set yrange [{y}:{Y}]".format(y=self.miny,
                                                               Y=self.maxy))
               gp.GP.write(self, "set object {i} {o}".format(i=self.objid,
-                                                           o=self.__options__(**kwargs)))
+                                                           o=self.__stylespec__(**kwargs)))
               # "How do I produce blank output page?"
               # http://gnuplot.info/faq/faq.html#x1-760006.9
               gp.GP.write(self, "plot [][] {0}".format(self.reppoint))
