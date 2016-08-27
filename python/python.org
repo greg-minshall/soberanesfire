@@ -1023,8 +1023,28 @@ better?
 
       def __init__(self, term='x11'):
           gp.GP.__init__(self, term=term)
+          self.reset()
 
+      def reset(self):
+          self.objid = 0
+          gp.GP.write(self, "set size ratio -1")
+          self.minx = self.miny = self.maxx = self.maxy = None
 
+      def __minmax__(self, coords):
+          """keep our minimums and maximums up to date"""
+          # http://stackoverflow.com/a/26310202/1527747
+          cminx = min([pair[0] for pair in coords])
+          cminy = min([pair[1] for pair in coords])
+          cmaxx = max([pair[0] for pair in coords])
+          cmaxy = max([pair[1] for pair in coords])
+          if self.minx == None or self.minx > cminx:
+              self.minx = cminx
+          if self.miny == None or self.miny > cminy:
+              self.miny = cminy
+          if self.maxx == None or self.maxx < cmaxx:
+              self.maxx = cmaxx
+          if self.maxy == None or self.maxy < cmaxy:
+              self.maxy = cmaxy
 
       def __rewrite__(self, pairs, btw, inter):
           """from a sequence of PAIRS, pull them out and separate them with
@@ -1053,7 +1073,23 @@ better?
           #elif shape.type == 'Line':
           #    pass
           elif shape.type == 'Polygon': # gp.GP.write(self, ...)
-              print("set object 1 polygon from {0}".format(self.__rewrite__(shape.exterior.coords, ", ", " to ")))
+              self.__minmax__(shape.exterior.coords)
+              outstr = self.__rewrite__(shape.exterior.coords, ", ", " to ")
+              self.objid += 1
+              # gp.py's write() call sleeps here with the comment
+              # "gnuplot actions are nonblocking"
+              # so, we short cut that here
+              self.stdin.write("set object {i} polygon from {s}\n".format(i=self.objid,
+                                                                        s=outstr))
+              gp.GP.write(self, "set object 1 fc rgb '#000000' fillstyle solid lw 0")
+              gp.GP.write(self, "set xrange [{x}:{X}]".format(x=self.minx,
+                                                              X=self.maxx))
+              gp.GP.write(self, "set yrange [{y}:{Y}]".format(y=self.miny,
+                                                              Y=self.maxy))
+              print("minx {0} maxx {1} miny {2} maxy {3}".format(self.minx, self.maxx, self.miny, self.maxy))
+              # "How do I produce blank output page?"
+              # http://gnuplot.info/faq/faq.html#x1-760006.9
+              gp.GP.write(self, "plot [][] 2")
           else:
               # http://stackoverflow.com/a/24065533/1527747
               raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
