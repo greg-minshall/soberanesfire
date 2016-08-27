@@ -912,6 +912,24 @@ here's an example of how to use:
 python xpathusing.py `ls ~/work/gis/play/IR/20160???*Soberanes*/doc.kml | sort` 2>&1 > y.kml
 #+END_EXAMPLE
 
+** my "library"
+
+this just consists of various general purpose routines i want to use
+in other applications.
+
+#+BEGIN_SRC python :tangle ggmlib.py
+  <<eprint>>
+  <<shPolyJson>>
+  <<shPolyShape>>
+  <<shPoly>>                      # XXX
+  <<featuregeometry>>
+  <<extractwkt>>
+  <<extractgml>>
+  <<extractjson>>
+  <<extractshape>>
+
+#+END_SRC
+
 ** [[http://geoscript.org/][geoscript]]
 
 a way of accessing JTS.  which, if GEOS is solely a downstream of JTS,
@@ -958,7 +976,7 @@ otoh, matplotlib plotting itself is very fast.
 
 ** gnuplot?
 
-a couple of packages.  Gnuplot (fink: gnuplot-py27) seems nice.  otoh,
+a couple of packages.  [[http://gnuplot-py.sourceforge.net/][Gnuplot]] (fink: gnuplot-py27) seems nice.  otoh,
 it doesn't support what i need "natively", so maybe [[https://github.com/jfindlay/gp.py][gp.py]] will be
 better?
 
@@ -996,18 +1014,57 @@ better?
        fx(t,4),fy(t,4) with lines ls 1")
 #+END_SRC
 
-#+RESULTS:
-: None
-
+#+name: GpShape
 #+BEGIN_SRC python
-import shPoly
-import extractwkt
+  import gp
 
-sh = extractwkt.extractshape("x.gml", "Soberanes", "Heat Perimeter")
-shPoly.shPolyShape(sh)
+  class GpShape(gp.GP):
+      """plotting Shapely objects using gnuplot"""
 
+      def __init__(self, term='x11'):
+          gp.GP.__init__(self, term=term)
+
+
+
+      def __rewrite__(self, pairs, btw, inter):
+          """from a sequence of PAIRS, pull them out and separate them with
+      BTW, and the separate successive pairs with INTER."""
+          def doit(x,y):
+              """reduce routine.  need to distinguish first from successive calls.
+              """
+              if type(x) == tuple:
+                  return "{0}{1}{2}{3}{4}{5}{6}".format(x[0], btw, x[1],
+                                                        inter, y[0], btw, y[1])
+              elif type(x) == str:
+                  return "{0}{1}{2}{3}{4}".format(x, inter, y[0], btw, y[1])
+              else:
+                  raise TypeError("internal error: type s/b tuple or str")
+          return reduce(doit, pairs)
+
+      def add(self, shape):
+          """add shapely SHAPE to the plot"""
+
+          if shape.type in ['MultiPoint', 'MultiLine', 
+                            'MultiPolygon', 'GeometryCollection']:
+              for geom in shape.geoms:
+                  self.add(geom)  # recurse for each sub-geometry
+          #elif shape.type == 'Point':   XXX
+          #    pass
+          #elif shape.type == 'Line':
+          #    pass
+          elif shape.type == 'Polygon': # gp.GP.write(self, ...)
+              print("set object 1 polygon from {0}".format(self.__rewrite__(shape.exterior.coords, ", ", " to ")))
+          else:
+              # http://stackoverflow.com/a/24065533/1527747
+              raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
+          # ignore = ax.set_title('Polygon')
 #+END_SRC
 
-#+RESULTS:
-: None
+#+BEGIN_SRC python :tangle GpShape.py
+  <<GpShape>>
+  import ggmlib
 
+  x = GpShape()
+  sh = ggmlib.extractshape("x.gml", "Soberanes", "Heat Perimeter")
+
+#+END_SRC
