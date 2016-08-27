@@ -1031,7 +1031,8 @@ better?
 
   class GpShape(gp.GP):
       """plotting Shapely objects using gnuplot.  for information on mouse
-  binding you can try launching gnuplot and saying 'show bind'
+  binding you can try launching gnuplot and saying 'show bind'; also,
+  see http://stackoverflow.com/a/23346921/1527747
 
       """
 
