@@ -107,35 +107,13 @@ print c
 
 #+name: shPolyShape
 #+BEGIN_SRC python
+  <<GpShape>>
   def shPolyShape(shape):
-      """prints the *EXTERIOR* of SHAPE (using matplotlib)""" # XXX to interior cutouts
-      # from https://github.com/matplotlib/matplotlib/issues/5836
-      import warnings;
-      with warnings.catch_warnings():
-          warnings.simplefilter("ignore");
-          from matplotlib import pyplot
-      import sys
+      """prints the *EXTERIOR* of SHAPE)""" # XXX to interior cutouts
 
-      fig = pyplot.figure(1, figsize=(5,5), dpi=90)
-      # for '111': http://stackoverflow.com/a/6981055/1527747
-      # for 'aspect=1.0': http://stackoverflow.com/q/7965743/1527747
-      ax = fig.add_subplot(111, aspect=1.0)
-      if shape.type == 'MultiPolygon':
-          for pgon in shape.geoms:
-              (x,y,z) = zip(*pgon.exterior.coords)
-              ignore = ax.plot(x, y, color='#000000', alpha=0.7,
-                               linewidth=1, solid_capstyle='round', zorder=2)
-      elif shape.type == 'Polygon':
-          (x,y,z) = zip(*shape.exterior.coords)
-          ignore = ax.plot(x, y, color='#000000', alpha=0.7,
-                           linewidth=1, solid_capstyle='round', zorder=2)
-      else:
-          # http://stackoverflow.com/a/24065533/1527747
-          raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
+      gp = GpShape(args.device)
+      gp.add(shape)
 
-
-      ignore = ax.set_title('Polygon')
-      pyplot.show()
 #+END_SRC
 
 #+name: shPoly
@@ -442,55 +420,79 @@ this prints the wkt of a layer/feature of a kml file
       main(sys.argv)
 #+END_SRC
 
-** differencewkt.py
 
-#+BEGIN_SRC python :tangle differencewkt :shebang "#!/usr/bin/env python"
+XXX
+it would be nice to read direct from a .kmz (zip) file.  but it
+doesn't seem like the current gdal/ogr supports that.
+#+BEGIN_EXAMPLE
+import zipfile
+zf = zipfile.ZipFile("20160729_Soberanes_IR.kmz", "r")
+print(zf)
+zf.namelist()
+doc = zf.open("doc.kml")
+data = doc.read()
+#+END_EXAMPLE
+
+** difference.py
+
+#+BEGIN_SRC python :tangle difference :shebang "#!/usr/bin/env python"
   <<caution>>
-
-  from __future__ import print_function # for eprint() below
+  <<eprint>>
+  <<extractshape>>
+  <<GpShape>>
 
   import argparse
-  import os
-  import osgeo
-  from osgeo import gdal
-  from osgeo import ogr
-  import sys
-  from shapely import wkt
-
-  # XXX
-  # it would be nice to read direct from a .kmz (zip) file.  but it
-  # doesn't seem like the current gdal/ogr supports that.
-  # import zipfile
-  # zf = zipfile.ZipFile("20160729_Soberanes_IR.kmz", "r")
-  # print(zf)
-  # zf.namelist()
-  # ndoc = zf.open("doc.kml")
-  # data = doc.read()
-  # XXX
-
-  # get layer name: Soberanes
-  # get feature name: Heat Perimeter
-
-  # from [[http://stackoverflow.com/a/14981125][stack exchange]]
-  def eprint(*args, **kwargs):
-      print(*args, file=sys.stderr, **kwargs)
+  import shapely
 
   def main(argv):
       cmd = argv[0]
-      parser = argparse.ArgumentParser(description="compute the set-theoretic difference: fileA \\ fileB")
+      parser = argparse.ArgumentParser(description=""" compute the set-theoretic difference between layers/features in
+      files.  can specify --feature/--layer once, so same in all files.
+      or, specify once for each input file.  each successive file is
+      subtracted from (what is left over of) the first file.  note that
+      you need to separate the file names from the layer/feature by
+      using "--" """)
+      parser.add_argument('-l', '--layers', type=str, nargs="+", required=True,
+                          help="name of desired layer (in file)")
+      parser.add_argument('-f', '--features', type=str, nargs="+", required=True,
+                          help="name of desired feature (within layer)")
       # use "type=str" since we use the file name for ogr.Open()
-      parser.add_argument('fileA', type=argparse.FileType('r'),
-                          help="base set")
-      parser.add_argument('fileB', type=argparse.FileType('r'),
-                          help="set to remove")
-      args = parser.parse_args();
+      parser.add_argument('files', type=str, nargs='*', help="input files")
+      args = parser.parse_args()
 
-      geo1 = wkt.loads(args.fileA.read())
-      geo2 = wkt.loads(args.fileB.read())
+      """
+  validity check input. basically, good if one of the following is true
+  - all three the same
+  - one one, other two N
+  - two one, other N
 
-      print(geo1.is_valid)
-      print(geo2.is_valid)
-      geo3 = geo1.difference(geo2);
+  which is to say, at most two different counts and, if two, one has to be one.
+
+  """
+
+      lens = { len(args.layers), len(args.features), len(args.files) }
+
+      if (len(lens) != 1 and 1 not in lens) or len(lens) > 2:
+          eprint("""wrong number of file/feature/layer arguments: all
+          three can appear the same number of times; or two can appear
+          the same number of times and at least one must appear one
+          time""")
+          sys.exit(1)
+
+      if len(lens) > 1:
+          h = max(lens)
+          if len(args.files) == 1:
+              args.files = reduce(lambda x,y: x + args.files, range(h), [])
+          if len(args.layers) == 1:
+              args.layers = reduce(lambda x,y: x + args.layers, range(h), [])
+          if len(args.features) == 1:
+              args.features = reduce(lambda x,y: x + args.features,
+                                     range(h), [])
+      print("{0}\n{1}\n{2}".format(args.files, args.layers, args.features))
+      shapes = map(lambda file, layer, feature: extractshape(file, layer, feature),
+                   args.files, args.layers, args.features)
+      result = reduce(lambda x,y: x.difference(y), shapes)
+
 
   if __name__ == "__main__":
       main(sys.argv)
