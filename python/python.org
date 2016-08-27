@@ -113,6 +113,7 @@ print c
 
       gp = GpShape(device)
       gp.add(shape)
+      gp.plot()
 
 #+END_SRC
 
@@ -148,6 +149,7 @@ print c
       shape = extractshape(args.filename[0], args.layername, args.featurename)
 
       gp.add(shape)
+      gp.plot()
 
   # file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
   # layer = "Soberanes"
@@ -433,7 +435,7 @@ doc = zf.open("doc.kml")
 data = doc.read()
 #+END_EXAMPLE
 
-** difference.py
+** difference
 
 #+BEGIN_SRC python :tangle difference :shebang "#!/usr/bin/env python"
   <<caution>>
@@ -1208,17 +1210,23 @@ better?
               # http://stackoverflow.com/a/24065533/1527747
               raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
 
-      def add(self, shape, **kwargs):
-          """plot the shapely SHAPE object"""
-
+      def __mergedefaults__(self, **kwargs):
           defs = self.__defaults__
           for (k,v) in kwargs.items():
               try:
                   defs[k] = v
               except:
                   raise NameError("unknown option {0}; use getdefaults() for list".format(k))
-
+          return defs
+        
+      def add(self, shape, **kwargs):
+          """plot the shapely SHAPE object"""
+          defs = self.__mergedefaults__(**kwargs)
           self.__add__(shape, defs)
+
+
+      def plot(self, **kwargs):
+          defs = self.__mergedefaults__(**kwargs)
 
           if defs['legend'] != None and defs['legend'] != "":
               gp.GP.write(self, "set key {0}".format(defs['legend']))
