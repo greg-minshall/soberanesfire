@@ -1102,12 +1102,12 @@ better?
                   raise NameError("unknown option {0}; use getdefaults() for list".format(k))
           # now we have a complete list of options, turn them into a
           # style list.
-          results = "set style "
+          results = ""
           # ternary operator: http://stackoverflow.com/a/394814/1527747
 
           # fillstyle
           if defs['fillstyle'] == "none":
-              results += " fill empty"
+              results += " fillstyle empty"
           else:
               results += " fillstyle"
               if defs['transparency'] != 1:
@@ -1115,23 +1115,17 @@ better?
                                                                    t=defs['transparency'])
               else:
                   results += " " + defs['fillstyle']
-
-                  results += " " + defs['fillstyle']
           # including border
           if defs['border'] == 'noborder':
               results += " noborder"
           else:
               results += " " + defs['border']
-
-          # linestyle
-          if set([""]) != {defs['linetype'], defs['linecolor'], defs['linewidth']}:
-              # something isn't blank
-              results += " linestyle"
-              results += ifel('linetype', defs)
-              results += ifel('linecolor', defs)
-              results += ifel('linewidth', defs)
-
-          print results
+              # linestyle (only if a border)
+              if {defs['linetype'], defs['linecolor'], defs['linewidth']} != set([""]):
+                  # something isn't blank
+                  results += ifel('linetype', defs['linetype'])
+                  results += ifel('linecolor', defs['linecolor'])
+                  results += ifel('linewidth', defs['linewidth'])
           return results
 
 
