@@ -1235,6 +1235,7 @@ better?
           # running under gp.py under python, leaves the window up (and
           # still tracking mouse movements).
           gp.GP.write(self, "pause mouse close") # leave window running
+          gp.GP.write(self, "exit")              # and, exit
           # and, wait for window to close
           gp.GP.read(self)
 #+END_SRC
