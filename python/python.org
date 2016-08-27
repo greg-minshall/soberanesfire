@@ -1181,15 +1181,15 @@ better?
                   raise TypeError("internal error: type s/b tuple or str")
           return reduce(doit, pairs)
 
-      def add(self, shape, **kwargs):
-          """add shapely SHAPE to the plot"""
+      def __add__(self, shape, **kwargs):
+          """do the work to actually add shapely SHAPE geometries to the plot"""
 
           self.objid += 1         # make sure this happens
           if shape.type in ['MultiPoint', 'MultiLine', 
                             'MultiPolygon', 'GeometryCollection']:
               self.objid -= 1     # (but we don't want it here)
               for geom in shape.geoms:
-                  self.add(geom)  # recurse for each sub-geometry
+                  self.__add__(geom)  # recurse for each sub-geometry
           #elif shape.type == 'Point':   XXX
           #    pass
           #elif shape.type == 'Line':
@@ -1204,16 +1204,19 @@ better?
               # so, we short cut that here
               self.stdin.write("set object {i} polygon from {s}\n".format(i=self.objid,
                                                                           s=outstr))
-              gp.GP.write(self, "set xrange [{x}:{X}]".format(x=self.minx,
-                                                              X=self.maxx))
-              gp.GP.write(self, "set yrange [{y}:{Y}]".format(y=self.miny,
-                                                              Y=self.maxy))
-              gp.GP.write(self, "set object {i} {o}".format(i=self.objid,
-                                                           o=self.__stylespec__(**kwargs)))
-              # "How do I produce blank output page?"
-              # http://gnuplot.info/faq/faq.html#x1-760006.9
-              gp.GP.write(self, "plot [][] {0}".format(self.reppoint))
           else:
               # http://stackoverflow.com/a/24065533/1527747
               raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
+
+      def add(self, shape, **kwargs):
+          """plot the shapely SHAPE object"""
+
+          self.__add__(shape, **kwargs)
+          gp.GP.write(self, "set xrange [{x}:{X}]".format(x=self.minx,
+                                                          X=self.maxx))
+          gp.GP.write(self, "set yrange [{y}:{Y}]".format(y=self.miny,
+                                                          Y=self.maxy))
+          # "How do I produce blank output page?"
+          # http://gnuplot.info/faq/faq.html#x1-760006.9
+          gp.GP.write(self, "plot [][] {0}".format(self.reppoint))
 #+END_SRC
