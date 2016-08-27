@@ -1087,6 +1087,13 @@ better?
   style spec
 
           """
+
+          def ifel(k,v):
+              if v == "":
+                  return ""
+              else:
+                  return " {k} {v}".format(k=k,v=v)
+
           defs = self.__defaults__
           for (k,v) in kwargs.items():
               try:
@@ -1117,10 +1124,12 @@ better?
               results += " " + defs['border']
 
           # linestyle
-          results += " linestyle"
-          results += " linetype " + defs['linetype']
-          results += " linecolor " + defs['linecolor']
-          results += " linewidth " + defs['linewidth']
+          if set([""]) != {defs['linetype'], defs['linecolor'], defs['linewidth']}:
+              # something isn't blank
+              results += " linestyle"
+              results += ifel('linetype', defs)
+              results += ifel('linecolor', defs)
+              results += ifel('linewidth', defs)
 
           print results
           return results
