@@ -108,10 +108,10 @@ print c
 #+name: shPolyShape
 #+BEGIN_SRC python
   <<GpShape>>
-  def shPolyShape(shape):
+  def shPolyShape(shape, device=None):
       """prints the *EXTERIOR* of SHAPE)""" # XXX to interior cutouts
 
-      gp = GpShape(args.device)
+      gp = GpShape(device)
       gp.add(shape)
 
 #+END_SRC
@@ -439,7 +439,7 @@ data = doc.read()
   <<caution>>
   <<eprint>>
   <<extractshape>>
-  <<GpShape>>
+  <<shPolyShape>>
 
   import argparse
   import shapely
@@ -488,10 +488,12 @@ data = doc.read()
           if len(args.features) == 1:
               args.features = reduce(lambda x,y: x + args.features,
                                      range(h), [])
-      print("{0}\n{1}\n{2}".format(args.files, args.layers, args.features))
+
       shapes = map(lambda file, layer, feature: extractshape(file, layer, feature),
                    args.files, args.layers, args.features)
       result = reduce(lambda x,y: x.difference(y), shapes)
+
+      shPolyShape(result)
 
 
   if __name__ == "__main__":
@@ -1028,7 +1030,10 @@ better?
   import gp
 
   class GpShape(gp.GP):
-      """plotting Shapely objects using gnuplot"""
+      """plotting Shapely objects using gnuplot.  for information on mouse
+  binding you can try launching gnuplot and saying 'show bind'
+
+      """
 
       def __init__(self, term='x11'):
           if term == None and term != "":
