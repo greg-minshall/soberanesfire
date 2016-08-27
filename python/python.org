@@ -441,7 +441,7 @@ data = doc.read()
   <<caution>>
   <<eprint>>
   <<extractshape>>
-  <<shPolyShape>>
+  <<GpShape>>
 
   import argparse
   import shapely
@@ -495,8 +495,12 @@ data = doc.read()
                    args.files, args.layers, args.features)
       result = reduce(lambda x,y: x.difference(y), shapes)
 
-      shPolyShape(result)
-
+      gp = GpShape()
+      print("print about to add red")
+      gp.add(result, fillstyle="solid", fillcolor='"red"')
+      print("print about to add blue")
+      gp.add(shapes[0], fillstyle="empty", linecolor='"blue"')
+      gp.plot()
 
   if __name__ == "__main__":
       main(sys.argv)
@@ -1065,7 +1069,8 @@ better?
       def __setdefaults__(self):
           defs = { 'fillstyle': "empty",
                    'fillcolor': "rgb 0x000000",
-                   'transparency': 1,
+                   'transparency': 1.0,
+                   'density': 1.0,
                    'border': "off",
                    'linecolor': "rgb 0x000000",
                    'linewidth': 1,
@@ -1112,7 +1117,7 @@ better?
                       raise NameError("getdefaults: no default {0}".format(k))
               return results
 
-      def __stylespec__(self, defs):
+      def __stylespec__(self, prefix, defs):
           """from defaults and options passed on call, put together a valid
   style spec
 
@@ -1126,22 +1131,27 @@ better?
 
           # now we have a complete list of options, turn them into a
           # style list.
-          results = ""
+          results = prefix        # first part of command line
           # ternary operator: http://stackoverflow.com/a/394814/1527747
 
           # fillstyle
-          if defs['fillstyle'] == "none":
+          if defs['fillstyle'] in [None, "empty"]:
               results += " fillstyle empty"
           else:
               results += " fillstyle"
               if defs['transparency'] != 1:
-                  results += " transparent {s} density {t}".format(s=defs['fillstyle'],
-                                                                   t=defs['transparency'])
+                  # so, <density> is used to encode the transparency.
+                  results += " transparent {f} {d}".format(f=defs['fillstyle'],
+                                                           d=defs['transparency'])
               else:
-                  results += " " + defs['fillstyle']
+                  results += " {f} {d}".format(f=defs['fillstyle'],
+                                               d=defs['density'])
+                  results += ifel('fillcolor', defs['fillcolor'])
+
           # linestyle (only if a border)
           if {defs['linecolor'], defs['linewidth']} != set([""]):
               # something isn't blank
+              results += "\n{0} fillstyle".format(prefix)
               results += " border"
               results += ifel('linecolor', defs['linecolor'])
               results += ifel('linewidth', defs['linewidth'])
@@ -1204,8 +1214,9 @@ better?
               self.stdin.write("set object {i} polygon from {s}\n".format(i=self.objid,
                                                                           s=outstr))
               # set the style for that object
-              gp.GP.write(self, "set object {i} {o}".format(i=self.objid,
-                                                            o=self.__stylespec__(defs)))
+              prefix = "set object {i}".format(i=self.objid) # prefix to use
+              styles = self.__stylespec__(prefix, defs)
+              gp.GP.write(self, styles)
           else:
               # http://stackoverflow.com/a/24065533/1527747
               raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
@@ -1218,7 +1229,7 @@ better?
               except:
                   raise NameError("unknown option {0}; use getdefaults() for list".format(k))
           return defs
-        
+
       def add(self, shape, **kwargs):
           """plot the shapely SHAPE object"""
           defs = self.__mergedefaults__(**kwargs)
@@ -1243,8 +1254,8 @@ better?
           # window tends to disappear.  the following, in the case of
           # running under gp.py under python, leaves the window up (and
           # still tracking mouse movements).
-          gp.GP.write(self, "pause mouse close") # leave window running
-          gp.GP.write(self, "exit")              # and, exit
+          gp.GP.write(self, "\n pause mouse close") # leave window running
+          gp.GP.write(self, "\n exit")              # and, exit
           # and, wait for window to close
           gp.GP.read(self)
 #+END_SRC
