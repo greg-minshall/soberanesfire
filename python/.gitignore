@@ -1,7 +1,10 @@
 awklike
-differencewkt
+difference
 extractwkt
 shpoly
 xpathusing
 ShPoly.py*
 ggmlib.py*
+GpShape.py*
+x.*
+foo.*
