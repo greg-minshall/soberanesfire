@@ -1023,12 +1023,70 @@ better?
 
       def __init__(self, term='x11'):
           gp.GP.__init__(self, term=term)
-          self.reset()
+          self.__reset__()
+          self.__setdefaults__()
 
-      def reset(self):
+      def __reset__(self):
           self.objid = 0
           gp.GP.write(self, "set size ratio -1")
           self.minx = self.miny = self.maxx = self.maxy = None
+          self.reppoint = None    # need a representative point for
+                                  # plotting a blank page
+
+      def __setdefaults__(self):
+          defs = [ ('fillstyle', "empty"),
+                   ('fillcolor', "rgb 0x000000"),
+                   ('transparency', "0"),
+                   ('linetype', "1"),
+                   ('linewidth', "1"),
+                   ('linecolor', "rgb 0x000000"),
+                   ('border', "border")
+          ]
+          self.__defaults__ = defs;
+
+      def setdefaults(self, **kwargs):
+          """set one or more defaults for plotting; complex defaults should be
+  specified as a single string (e.g., linecolor="rgbcolor 0x000000")
+
+          """
+          # from Gnuplot.py's set()
+          for (k,v) in kwargs.items():
+              try:
+                  type = self.defaults[k]
+              except:
+                  raise NameError("setdefaults: no default {0}".format(k))
+              self.__defaults__[k] = v
+
+      def getdefaults(self, *args):
+          if (len(args)) == 0:
+              return self.__defaults__
+          else:
+              results = {}
+              for k in args.items():
+                  try:
+                      results.add(self.__defaults__[k])
+                  except:
+                      raise NameError("getdefaults: no default {0}".format(k))
+              return results
+
+      def __options__(self, **kwargs):
+          """from defaults and options passed on call, put together a valid
+  style list
+          """
+          defs = self.__defaults__
+          for (k,v) in kwargs.items():
+              try:
+                  defs[k] = v
+              except:
+                  raise NameError("unknown option {0}; use getdefaults() for list".format(k))
+          # now we have a complete list of options, turn them into a
+          # style list.  someday may want to scan the list to go from
+          # "generic" to "gnuplot".  but, we don't need that yet.
+
+          results = self.__rewrite__(defs, " ", " ")
+          print results
+          return results
+
 
       def __minmax__(self, coords):
           """keep our minimums and maximums up to date"""
@@ -1061,11 +1119,23 @@ better?
                   raise TypeError("internal error: type s/b tuple or str")
           return reduce(doit, pairs)
 
-      def add(self, shape):
+      # i don't want to duplicate all of gnuplot's parameters, as a
+      # "power user" can always just to g.write("...").  but, some
+      # things are fairly common.
+
+      # typical parameters: fill; fillcolor; linewidth; linecolor;
+      # linestyle; transparency
+
+      # so, plan is to have defaults from "compile" time, the ability to
+      # change the defaults (for subsequent calls), and the ability to
+      # specify a different value on each invocation of add)
+      def add(self, shape, **kwargs):
           """add shapely SHAPE to the plot"""
 
+          self.objid += 1         # make sure this happens
           if shape.type in ['MultiPoint', 'MultiLine', 
                             'MultiPolygon', 'GeometryCollection']:
+              self.objid -= 1     # (but we don't want it here)
               for geom in shape.geoms:
                   self.add(geom)  # recurse for each sub-geometry
           #elif shape.type == 'Point':   XXX
@@ -1073,34 +1143,36 @@ better?
           #elif shape.type == 'Line':
           #    pass
           elif shape.type == 'Polygon': # gp.GP.write(self, ...)
+              if self.reppoint == None:
+                  self.reppoint = shape.exterior.coords[0]
               self.__minmax__(shape.exterior.coords)
               outstr = self.__rewrite__(shape.exterior.coords, ", ", " to ")
-              self.objid += 1
               # gp.py's write() call sleeps here with the comment
               # "gnuplot actions are nonblocking"
               # so, we short cut that here
               self.stdin.write("set object {i} polygon from {s}\n".format(i=self.objid,
-                                                                        s=outstr))
-              gp.GP.write(self, "set object 1 fc rgb '#000000' fillstyle solid lw 0")
+                                                                          s=outstr))
               gp.GP.write(self, "set xrange [{x}:{X}]".format(x=self.minx,
                                                               X=self.maxx))
               gp.GP.write(self, "set yrange [{y}:{Y}]".format(y=self.miny,
                                                               Y=self.maxy))
-              print("minx {0} maxx {1} miny {2} maxy {3}".format(self.minx, self.maxx, self.miny, self.maxy))
+              gp.GP.write(self, "set object {i} {o}".format(i=self.objid,
+                                                           o=self.__options__(**kwargs)))
               # "How do I produce blank output page?"
               # http://gnuplot.info/faq/faq.html#x1-760006.9
-              gp.GP.write(self, "plot [][] 2")
+              gp.GP.write(self, "plot [][] {0}".format(self.reppoint))
           else:
               # http://stackoverflow.com/a/24065533/1527747
               raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
-          # ignore = ax.set_title('Polygon')
 #+END_SRC
 
 #+BEGIN_SRC python :tangle GpShape.py
   <<GpShape>>
   import ggmlib
 
-  x = GpShape()
+  x = GpShape(term="x11")
   sh = ggmlib.extractshape("x.gml", "Soberanes", "Heat Perimeter")
+
+  x.add(sh)
 
 #+END_SRC
