@@ -1326,28 +1326,41 @@ need to get the portion of map.  Google Earth displays:
 whereas my point files have things like:
 - -121.858129504874995, 36.445399181157804
 
+**** converting from 36 deg 45'32.99 to lat/lon
+
 so: concat numbers after "'" as in [0,1) (by prepending a decimal
 point), divide by .6, add to number between "deg" and "'", and divide
 by 60.
 
-#+BEGIN_SRC python :results output :var input="36 34'36.00 W"
-  import re
+#+name deg2latlon
+#+BEGIN_SRC python :results output :var input="121 23'51.80 W"
+  def deg2latlon(istr):
+      import re
 
-  regexp = "^(-*)([0-9]+)\s+([0-5][0-9])'([0-5][0-9])\.([0-9]{2})\s*([NWSEnwse])$"
+      regexp = "^([0-9]+)\s+([0-5][0-9])'([0-5][0-9])\.([0-9]{2})\s*([NWSEnwse])$"
+      matched = re.match(regexp, istr)
 
-  matched = re.match(regexp, input)
+      if matched == None:
+          raise ValueError("invalid lat/lon spec '{0}'".format(input))
 
-  if matched == None:
-      raise ValueError("invalid lat/lon spec '{0}'".format(input))
+      vals = matched.group(1,2,3,4,5)
+      secs = (float(int(vals[2]))+ ((float(int(vals[3])))/100.0))
+      dsecs = secs/60.0
+      mins = (float(int(vals[1])))+dsecs
+      deg = float(int(vals[0])) + (mins/60.0)
+      richtung = vals[4]
 
-  vals = matched.group(1,2,3,4,5,6)
+      if richtung in "SWsw":          # here we're in negative territory
+          deg = -deg
+      return deg
 
-  print vals
+  def main(argv):
+      print deg2latlon(input)
 
-  
+  if __name__ == "__main__":
+      import sys
+      main(sys.argv)
+
+
 
 #+END_SRC
-
-#+RESULTS:
-: ('', '36', '34', '36', '00', 'W')
-
