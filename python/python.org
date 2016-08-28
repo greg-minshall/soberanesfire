@@ -1308,3 +1308,30 @@ okay, gnuplot info file (commands:plot:binary:keywords) talks about
 "dx dy dz" and "origin", which may help with coordinates.
 
 so, use geotiler to get image, then plot.
+
+for matplotlib, [[http://www.labri.fr/perso/nrougier/teaching/matplotlib/][here]] is something talking about maps, pointing at
+[[http://matplotlib.org/basemap/][basemap]] and [[http://scitools.org.uk/cartopy/][cartopy]].
+
+cartopy has an img_tiles() routine that maybe pulls down OSM data?
+and, [[http://scitools.org.uk/cartopy/docs/latest/matplotlib/intro.html][it works]] with mapplotlib.
+
+[[http://matplotlib.org/basemap/users/mapcoords.html][here]] is a basemap example of aligning the coordinates (using
+basemap).  but, the basemap fink tar file is some 100MB in size!  i
+think i do need data from OSM.
+
+need to get the portion of map.  Google Earth displays:
+- nw  36 deg 34'36.00 N, 122 deg 04'13.08 W
+- se  36 deg 09'00.00 N, 121 deg 23'51.80 W
+
+whereas my point files have things like:
+- -121.858129504874995, 36.445399181157804
+
+so: concat numbers after "'" as in [0,1) (by prepending a decimal
+point), divide by .6, add to number between "deg" and "'", and divide
+by 60.
+
+#+BEGIN_SRC python :results output :var input="36 34'36.00 W"
+import re
+
+regexp = "^(-*[0-9]+)\s+([0-5][0-9])'([0-5][0-9])\.([0-9]{2})\s*[NWSEnwse]$"
+#+END_SRC
