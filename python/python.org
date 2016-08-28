@@ -991,7 +991,39 @@ seconds system)
 
 otoh, matplotlib plotting itself is very fast.
 
-** gnuplot?
+ah, matplotlib taking a long time to start up?  printing message about
+re-building font-cache?  [[http://stackoverflow.com/questions/34771191/matplotlib-taking-time-when-being-imported][here]] is a possible solution.
+
+and, we have
+#+BEGIN_EXAMPLE
+bash greg-minshalls-mbp-2: {1782} ls ~/.matplotlib/
+fontList.cache  matplotlibrc    tex.cache/
+#+END_EXAMPLE
+
+then
+#+BEGIN_EXAMPLE
+bash greg-minshalls-mbp-2: {1786} rm -rf ~/.matplotlib/*.cache
+bash greg-minshalls-mbp-2: {1787} python
+Python 2.7.12 (default, Jul 30 2016, 03:44:10) 
+[GCC 4.2.1 Compatible Apple LLVM 7.3.0 (clang-703.0.31)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from matplotlib import pyplot
+/sw/lib/python2.7/site-packages/matplotlib/font_manager.py:278: UserWarning: Matplotlib is building the font cache using fc-list. This may take a moment.
+  warnings.warn('Matplotlib is building the font cache using fc-list. This may take a moment.')
+>>> 
+bash greg-minshalls-mbp-2: {1788} python
+Python 2.7.12 (default, Jul 30 2016, 03:44:10) 
+[GCC 4.2.1 Compatible Apple LLVM 7.3.0 (clang-703.0.31)] on darwin
+Type "help", "copyright", "credits" or "license" for more information.
+>>> from matplotlib import pyplot
+>>> 
+#+END_EXAMPLE
+significant speedup!
+
+
+** what to use as the display?
+
+*** gnuplot?
 
 a couple of packages.  [[http://gnuplot-py.sourceforge.net/][Gnuplot]] (fink: gnuplot-py27) seems nice.  otoh,
 it doesn't support what i need "natively", so maybe [[https://github.com/jfindlay/gp.py][gp.py]] will be
@@ -1276,32 +1308,3 @@ okay, gnuplot info file (commands:plot:binary:keywords) talks about
 "dx dy dz" and "origin", which may help with coordinates.
 
 so, use geotiler to get image, then plot.
-
-matplotlib taking a long time to start up?  printing message about
-re-building font-cache?  [[http://stackoverflow.com/questions/34771191/matplotlib-taking-time-when-being-imported][here]] is a possible solution.
-
-and, we have
-#+BEGIN_EXAMPLE
-bash greg-minshalls-mbp-2: {1782} ls ~/.matplotlib/
-fontList.cache  matplotlibrc    tex.cache/
-#+END_EXAMPLE
-
-then
-#+BEGIN_EXAMPLE
-bash greg-minshalls-mbp-2: {1786} rm -rf ~/.matplotlib/*.cache
-bash greg-minshalls-mbp-2: {1787} python
-Python 2.7.12 (default, Jul 30 2016, 03:44:10) 
-[GCC 4.2.1 Compatible Apple LLVM 7.3.0 (clang-703.0.31)] on darwin
-Type "help", "copyright", "credits" or "license" for more information.
->>> from matplotlib import pyplot
-/sw/lib/python2.7/site-packages/matplotlib/font_manager.py:278: UserWarning: Matplotlib is building the font cache using fc-list. This may take a moment.
-  warnings.warn('Matplotlib is building the font cache using fc-list. This may take a moment.')
->>> 
-bash greg-minshalls-mbp-2: {1788} python
-Python 2.7.12 (default, Jul 30 2016, 03:44:10) 
-[GCC 4.2.1 Compatible Apple LLVM 7.3.0 (clang-703.0.31)] on darwin
-Type "help", "copyright", "credits" or "license" for more information.
->>> from matplotlib import pyplot
->>> 
-#+END_EXAMPLE
-significant speedup!
