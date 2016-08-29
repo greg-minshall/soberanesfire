@@ -1029,6 +1029,10 @@ a couple of packages.  [[http://gnuplot-py.sourceforge.net/][Gnuplot]] (fink: gn
 it doesn't support what i need "natively", so maybe [[https://github.com/jfindlay/gp.py][gp.py]] will be
 better?
 
+[[http://www.gnuplotting.org/tag/pm3d/][here]] is an article on plotting maps (from a site that has lots of
+gnuplot tips, apparently).  [[http://www.gnuplotting.org/tag/object/][objects]] seem to be how to embed polygons
+and such.
+
 #+BEGIN_SRC python :results none
   import gp
 
@@ -1292,25 +1296,27 @@ better?
           gp.GP.read(self)
 #+END_SRC
 
+ah, [[http://gnuplot-surprising.blogspot.de/2011/09/gnuplot-background-image.html][gnuplot *can* plot images]]!!  now, how to get coordinates to match up...
+
+okay, gnuplot info file (commands:plot:binary:keywords) talks about
+"dx dy dz" and "origin", which may help with coordinates.
+
 ** maps?
 
 how do we get our polygon positioned over a map (in the background).
 [[http://www.gnuplotting.org/tag/pm3d/][here's]] *something* of that order.
 
 [[http://wrobell.it-zone.org/geotiler/][geotiler]] is based on "modest maps".  it uses [[http://redis.io/][redis]] as a cache.
+(there's also [[http://tilecache.org/][tilecache]] that one can use as a WMS tile cache.)
 
 one can [[http://stackoverflow.com/a/21768191/1527747][draw polygons in PIL]].  (really, in [[https://github.com/python-pillow/Pillow][Pillow]].)  sadly, though, as
 built on fink, it uses Preview to display images.
 
-ah, [[http://gnuplot-surprising.blogspot.de/2011/09/gnuplot-background-image.html][gnuplot *can* plot images]]!!  now, how to get coordinates to match up...
-
-okay, gnuplot info file (commands:plot:binary:keywords) talks about
-"dx dy dz" and "origin", which may help with coordinates.
-
 so, use geotiler to get image, then plot.
 
 for matplotlib, [[http://www.labri.fr/perso/nrougier/teaching/matplotlib/][here]] is something talking about maps, pointing at
-[[http://matplotlib.org/basemap/][basemap]] and [[http://scitools.org.uk/cartopy/][cartopy]].
+[[http://matplotlib.org/basemap/][basemap]] and [[http://scitools.org.uk/cartopy/][cartopy]].  [[http://matplotlib.org/users/transforms_tutorial.html#the-transformation-pipeline][here]] is *maybe* how one would transform
+coordinates in matplotlib.
 
 cartopy has an img_tiles() routine that maybe pulls down OSM data?
 and, [[http://scitools.org.uk/cartopy/docs/latest/matplotlib/intro.html][it works]] with mapplotlib.
@@ -1328,7 +1334,51 @@ need to get the portion of map.  Google Earth displays:
 whereas my point files have things like:
 - -121.858129504874995, 36.445399181157804
 
-**** converting from 36 deg 45'32.99 to lat/lon
+*** getting OSM tiles
+
+[[http://wiki.openstreetmap.org/wiki/Slippy_Map][the wiki entry on Slippy Maps]] says the tile server is on
+[[http://tile.openstreetmap.org]], which one accesses with the appropriate
+[[http://ojw.dev.openstreetmap.org/StaticMap/?mode=API][API]].
+
+so, try to cons up a URL
+
+http://tile.openstreetmap.org/?show=1&lat=36.4&lon=-121&w=800&h=600&layer=hiking&fmt=png&filter=none&lang=en&att=logo
+
+on the other hand, [[https://wiki.openstreetmap.org/wiki/Tiles][*this* page]] says the format is different (in the
+"tiles url" column of the table "Servers"):
+
+http://a.tile.openstreetmap.org/0/-121/36.png
+
+hmm.  that didn't work.  from the same table, try wiki
+
+https://maps.wikimedia.org/osm-intl/0/-121/36.png
+
+yet another [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][OSM wiki page]], yet another format?  i guess x can't be
+zero, it goes from 0 (180 degrees) to 2^zoom.  y goes from 0 
+
+https://maps.wikimedia.org/osm-intl/7/61/36.png
+
+which more or less seems to work.  the same page give code in *all*
+available languages on how to do this.  here is the python
+
+#+BEGIN_SRC python :var lat=36.4 :var lon=-121.858 :var zoom=10 :var mapurl="https://maps.wikimedia.org/osm-intl" :results output
+  # from http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+  import math
+  def deg2num(lat_deg, lon_deg, zoom):
+    lat_rad = math.radians(lat_deg)
+    n = 2.0 ** zoom
+    xtile = int((lon_deg + 180.0) / 360.0 * n)
+    ytile = int((1.0 - math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi) / 2.0 * n)
+    return (xtile, ytile)
+  x,y = deg2num(lat, lon, zoom)
+  print "{m}/{z}/{x}/{y}.png".format(m=mapurl, z=zoom, x=x, y=y)
+#+END_SRC
+
+#+RESULTS:
+: https://maps.wikimedia.org/osm-intl/10/165/400.png
+
+
+*** converting from 36 deg 45'32.99 to lat/lon
 
 so: concat numbers after "'" as in [0,1) (by prepending a decimal
 point), divide by .6, add to number between "deg" and "'", and divide
@@ -1387,3 +1437,4 @@ by 60.
 : ("36 09'00.00 N", "121 23'51.80 W")
 : {'se': [36.15, -121.39772222222223], 'nw': [36.57666666666667, -122.0703]}
 
+openstreetmap has a [[http://ojw.dev.openstreetmap.org/StaticMap/?api=json][page]] that describes their [[http://ojw.dev.openstreetmap.org/StaticMap/?mode=API][map tile protocol]] in JSON.
