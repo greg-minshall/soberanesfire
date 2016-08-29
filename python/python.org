@@ -934,11 +934,13 @@ python xpathusing.py `ls ~/work/gis/play/IR/20160???*Soberanes*/doc.kml | sort` 
 this just consists of various general purpose routines i want to use
 in other applications.
 
-#+BEGIN_SRC python :tangle ggmlib.py
+#+BEGIN_SRC python :tangle ~/usr/lib/python/ggmlib.py
   <<eprint>>
   <<shPolyJson>>
   <<shPolyShape>>
   <<shPoly>>
+  <<deg2dec>>
+  <<deg2url>>
   <<featuregeometry>>
   <<extractwkt>>
   <<extractgml>>
@@ -1361,6 +1363,7 @@ https://maps.wikimedia.org/osm-intl/7/61/36.png
 which more or less seems to work.  the same page give code in *all*
 available languages on how to do this.  here is the python
 
+#+name: deg2url
 #+BEGIN_SRC python :var lat=36.4 :var lon=-121.858 :var zoom=10 :var mapurl="https://maps.wikimedia.org/osm-intl" :results output
   # from http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
   import math
@@ -1376,6 +1379,30 @@ available languages on how to do this.  here is the python
 
 #+RESULTS:
 : https://maps.wikimedia.org/osm-intl/10/165/400.png
+
+#+CALL: deg2url(zoom=11)
+
+#+RESULTS:
+: https://maps.wikimedia.org/osm-intl/11/330/801.png
+
+okay.  but, i'd better put up some sort of cache before going much
+further.
+
+*** caching
+
+**** [[http://redis.io/][redis]]
+
+if we use redis, define a cache directory, add .png files there, then
+add index in redis.  but, then we need to deal with cleaning the
+cache.  still, might be the thing to do.  we could add the file
+pointer with an expire time (for stale), maybe derived from whatever
+web response says (yuck), and the time of last use (for flushing
+unused entries), then occasionally run this, deleting stale or unused
+entries.
+
+**** [[http://tilecache.org/][tilecache]]
+
+seems nice.  a bit long in the tooth, though (copyright says 2006-2010).
 
 
 *** converting from 36 deg 45'32.99 to lat/lon
