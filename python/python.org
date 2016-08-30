@@ -1593,7 +1593,7 @@ request.
      zoomexp = 2**zoom            # just for convenience
    
      tcenterx,tcentery = deg2tilexy(lat, lon, zoom)
-     print lat, lon, zoom, tcenterx, tcentery
+     print lat, lon, zoom, " ==> ", tcenterx, tcentery
 
      # so, tcenterx,tcentery is tile coordinates of the center of the map.  now get
      # the height of the screen in tiles.  (in case you're wondering,
@@ -1607,24 +1607,22 @@ request.
      if shit % 2 == 0:                 # enforce oddness, so we *have* a
         shit += 1                      # center XXX
 
-     if swit >= zoomexp or shit > zoomexp:
+     if swit >= zoomexp or shit >= zoomexp:
         # *** if we've zoomed out too far, recurse at a higher zoom level
         return bbox(lat, lon, zoom+1)
 
-     print swit, shit
-
-     tnwx, tnwy = (tcenterx - ((swit+1)/2), tcentery - ((shit+1)/2))
-     tsex, tsey = (tcenterx + ((swit+1)/2), tcentery + ((shit+1)/2))
+     print "swit, shit: ", swit, shit
+     tnwx, tnwy = (tcenterx - ((swit-1)/2), tcentery - ((shit-1)/2))
+     tsex, tsey = (tcenterx + ((swit-1)/2), tcentery + ((shit-1)/2))
 
      # check to see if we are zoomed too far out, wrapped around, or some such
-     print (tnwx, tnwy, tsex, tsey, zoomexp)
+     print tnwx, tnwy, tsex, tsey, zoomexp
      tnwx, tnwy = tilexyfixup(tnwx, tnwy, zoom)
      tsex, tsey = tilexyfixup(tsex, tsey, zoom)
-     print (tnwx, tnwy, tsex, tsey, zoomexp)
+     print tnwx, tnwy, tsex, tsey, zoomexp
 
      return (tnwx, tnwy, tsex, tsey, zoom)
 #+END_SRC
-
 
 #+name: getpngs
 #+BEGIN_SRC python :results output verbatim :var lat=36.4 :var lon=-121.858 :var zoom=5 :var parms=parameters :var mapurl=MAPURL
@@ -1655,6 +1653,7 @@ request.
   # now, run through the list of tiles.  for each tile, download it,
   # then paste it into the right place in the image.
 
+  print tnwx, tnwy, tsex, tsey, 2**zoom
   imx = 0
   for tx in range(tnwx, tsex+1):
      imy = 0
@@ -1673,21 +1672,28 @@ request.
         im.paste(im2, box=(imx, imy))
         imy += p['tiley']
      imx += p['tilex']
-  im.show()
+  # im.show()
   im.save("/Users/minshall/work/gis/python/foo.png")
 #+END_SRC
 
-#+call: getpngs(zoom=0, lat=0, lon=0)
+#+call: getpngs(zoom=0, lat=90, lon=0)
 
 #+RESULTS:
-: 0 0 0 0 0
-: 0 0 1 1 1
-: 0 0 2 2 2
-: 3 3
-: (0, 0, 4, 4, 4)
-: (0, 0, 0, 0, 4)
+: 90 0 0  ==>  0 0
+: 90 0 1  ==>  0 1
+: 90 0 2  ==>  0 2
+: swit, shit:  3 3
+: -1 1 1 3 4
+: 1 1 1 3 4
+: 1 1 1 3 4
 
+#+BEGIN_SRC python :results output verbatim
+<<deg2tilexy>>
+print tilexyfixup(4, 4, 2)
+#+END_SRC
 
+#+RESULTS:
+: (0, 0)
 
 *** converting from degrees minutes seconds to decimal lat/lon
 
