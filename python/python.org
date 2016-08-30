@@ -1392,8 +1392,8 @@ http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
     """give lat/lon (in decimal) and a zoom, return the tilex and tiley coordinates of the required tile"""
     lat_rad = math.radians(lat_deg)
     n = 2.0 ** zoom
-    xtile = int((lon_deg + 180.0) / 360.0 * n)
-    ytile = int((1.0 - math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi) / 2.0 * n)
+    xtile = int(((lon_deg + 180.0) / 360.0) * n)
+    ytile = int(((1.0 - ((math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad)))) / math.pi))) * (n/2.0))
     return (xtile, ytile)
 #+END_SRC
 
@@ -1585,7 +1585,7 @@ request.
 
      zoomexp = 2**zoom            # just for convenience
      # check to see if we are zoomed too far out, wrapped around, or some such
-     print swit, shit, tnwx, tnwy, tsex, tsey, 2**zoom
+     print (tnwx, tnwy, tsex, tsey, 2**zoom), swit, shit
      if tnwy < 0:                 # we've wrapped over the north pole
         # (tnwy % shit) is how far we are from north pole, so go that
         # far from it on *this* side
@@ -1615,7 +1615,7 @@ request.
 
 #+RESULTS:
 : 90 0 0
-: 3 3 -2 -7 2 -3 1
+: (-2, -7, 2, -3, 1) 3 3
 : (2, 2, 2, -3, 0)
 
 #+name: getpngs
