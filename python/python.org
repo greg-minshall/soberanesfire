@@ -1583,7 +1583,7 @@ request.
      tse = (tcenterx + ((swit+1)/2), tcentery + ((shit+1)/2))
 
      # check to see if we are zoomed too far out
-     if tnw[0] < 0 or tnw[1] < 0:
+     if tnw[0] < 0 or tse[0] >= 2**zoom or tnw[1] < 0 or tse[1] >= 2**zoom:
         return bbox(lat, lon, zoom+1)
      else:
         return (tnw[0], tnw[1], tse[0], tse[1], zoom)
