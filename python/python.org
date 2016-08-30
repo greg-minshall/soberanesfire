@@ -1388,13 +1388,38 @@ http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
 #+BEGIN_SRC python
   # from http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
   import math
+
+  def tilexyfixup(xtile, ytile, zoom):
+    n = 2**zoom
+
+    # deal with wrapping
+    if xtile < 0:
+      # if *x* is negative, reflect around x axis
+      xtile = n - (xtile%n)
+
+    if ytile < 0 or ytile > n:
+      # if *y* out of bounds, negative, reflect around y axis
+      nhalves = int(ytile/(n/2.0))  # how many halves of earth did we wrap?
+      if nhalves%2 == 1:
+        ytile = n - (ytile%n)
+        # but, on the other side of the world
+        xtile += n/2
+
+    # make sure we're in 1..2**zoom
+    xtile %= n
+    ytile %= n
+  
+    return (int(xtile), int(ytile))
+
+
   def deg2tilexy(lat_deg, lon_deg, zoom):
     """give lat/lon (in decimal) and a zoom, return the tilex and tiley coordinates of the required tile"""
     lat_rad = math.radians(lat_deg)
     n = 2.0 ** zoom
     xtile = int(((lon_deg + 180.0) / 360.0) * n)
     ytile = int(((1.0 - ((math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad)))) / math.pi))) * (n/2.0))
-    return (xtile, ytile)
+
+    return tilexyfixup(xtile, ytile, zoom)
 #+END_SRC
 
 #+name: MAPURL
@@ -1564,9 +1589,11 @@ request.
      """
 
      import math
-     print lat, lon, zoom
 
+     zoomexp = 2**zoom            # just for convenience
+   
      tcenterx,tcentery = deg2tilexy(lat, lon, zoom)
+     print lat, lon, zoom, tcenterx, tcentery
 
      # so, tcenterx,tcentery is tile coordinates of the center of the map.  now get
      # the height of the screen in tiles.  (in case you're wondering,
@@ -1580,43 +1607,24 @@ request.
      if shit % 2 == 0:                 # enforce oddness, so we *have* a
         shit += 1                      # center XXX
 
+     if swit >= zoomexp or shit > zoomexp:
+        # *** if we've zoomed out too far, recurse at a higher zoom level
+        return bbox(lat, lon, zoom+1)
+
+     print swit, shit
+
      tnwx, tnwy = (tcenterx - ((swit+1)/2), tcentery - ((shit+1)/2))
      tsex, tsey = (tcenterx + ((swit+1)/2), tcentery + ((shit+1)/2))
 
-     zoomexp = 2**zoom            # just for convenience
      # check to see if we are zoomed too far out, wrapped around, or some such
-     print (tnwx, tnwy, tsex, tsey, 2**zoom), swit, shit
-     if tnwy < 0:                 # we've wrapped over the north pole
-        # (tnwy % shit) is how far we are from north pole, so go that
-        # far from it on *this* side
-        tnwy = tnwy % shit
-        tnwx += zoomexp/2         # but, on the opposite side of the world
-     if tsey >= shit:             # we've wrapped under the south pole
-        # here, want to be (tsey%shit) away from south pole (max)
-        tsey = shit - (tsey % shit)
-        tsex += zoomexp/2         # but, again, around the world
-     if tnwx < 0:        # we've wrapped around to the west
-        # (twnx % swit) is how far we are from 0
-        tnwx = swit - (tnwx % swit)
-     if tsex >= swit:    # we've wrapped around to the east
-        tsex = tsex % swit
+     print (tnwx, tnwy, tsex, tsey, zoomexp)
+     tnwx, tnwy = tilexyfixup(tnwx, tnwy, zoom)
+     tsex, tsey = tilexyfixup(tsex, tsey, zoom)
+     print (tnwx, tnwy, tsex, tsey, zoomexp)
 
      return (tnwx, tnwy, tsex, tsey, zoom)
 #+END_SRC
 
-#+BEGIN_SRC python :results output verbatim :var lat=90 :var lon=0 :var zoom=0 :var parms=parameters
-  <<bbox>>
-  p = {}
-  for i in parms:
-     p[i[0]] = i[1]
-
-  print bbox(lat, lon, zoom)
-#+END_SRC
-
-#+RESULTS:
-: 90 0 0
-: (-2, -7, 2, -3, 1) 3 3
-: (2, 2, 2, -3, 0)
 
 #+name: getpngs
 #+BEGIN_SRC python :results output verbatim :var lat=36.4 :var lon=-121.858 :var zoom=5 :var parms=parameters :var mapurl=MAPURL
@@ -1669,9 +1677,15 @@ request.
   im.save("/Users/minshall/work/gis/python/foo.png")
 #+END_SRC
 
-#+call: getpngs(zoom=0, lat=0, lon=180)
+#+call: getpngs(zoom=0, lat=0, lon=0)
 
 #+RESULTS:
+: 0 0 0 0 0
+: 0 0 1 1 1
+: 0 0 2 2 2
+: 3 3
+: (0, 0, 4, 4, 4)
+: (0, 0, 0, 0, 4)
 
 
 
