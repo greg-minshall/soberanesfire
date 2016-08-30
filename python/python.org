@@ -939,7 +939,7 @@ in other applications.
   <<shPolyJson>>
   <<shPolyShape>>
   <<shPoly>>
-  <<deg2dec>>
+  <<deg2xy>>
   <<deg2url>>
   <<featuregeometry>>
   <<extractwkt>>
@@ -1363,22 +1363,28 @@ https://maps.wikimedia.org/osm-intl/7/61/36.png
 which more or less seems to work.  the same page give code in *all*
 available languages on how to do this.  here is the python
 
-#+name: deg2url
-#+BEGIN_SRC python :var lat=36.4 :var lon=-121.858 :var zoom=10 :var mapurl="https://maps.wikimedia.org/osm-intl" :results output
+
+#+name: deg2xy
+#+BEGIN_SRC python
   # from http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
   import math
-  def deg2num(lat_deg, lon_deg, zoom):
+  def deg2xy(lat_deg, lon_deg, zoom):
     lat_rad = math.radians(lat_deg)
     n = 2.0 ** zoom
     xtile = int((lon_deg + 180.0) / 360.0 * n)
     ytile = int((1.0 - math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad))) / math.pi) / 2.0 * n)
     return (xtile, ytile)
-  x,y = deg2num(lat, lon, zoom)
-  print "{m}/{z}/{x}/{y}.png".format(m=mapurl, z=zoom, x=x, y=y)
 #+END_SRC
 
-#+RESULTS:
-: https://maps.wikimedia.org/osm-intl/10/165/400.png
+#+name: deg2url
+#+BEGIN_SRC python :var lat=36.4 :var lon=-121.858 :var zoom=10 :var mapurl="http://127.0.0.1:8080/osm-intl" :var oldmapurl="https://maps.wikimedia.org/osm-intl"
+  <<deg2xy>>
+  x,y = deg2xy(lat, lon, zoom)
+  return "{m}/{z}/{x}/{y}.png".format(m=mapurl, z=zoom, x=x, y=y)
+#+END_SRC
+
+#+RESULTS: deg2url
+: http://127.0.0.1:8080/osm-intl/10/165/400.png
 
 #+CALL: deg2url(zoom=11)
 
@@ -1400,12 +1406,111 @@ web response says (yuck), and the time of last use (for flushing
 unused entries), then occasionally run this, deleting stale or unused
 entries.
 
-**** [[http://tilecache.org/][tilecache]]
+**** [[http://tilecache.org/][tilecache]]  ([[https://pypi.python.org/pypi/TileCache][on pypi.python.org]])
 
-seems nice.  a bit long in the tooth, though (copyright says 2006-2010).
+seems nice.  a bit long in the tooth, though (copyright says
+2006-2010).  it can talk CGI, but also [[https://en.wikipedia.org/wiki/Web_Server_Gateway_Interface][WSGI]].
+
+need to install [[https://pypi.python.org/pypi/Paste][Paste]] (fink has it).  done.
+
+in TileCache/Service.py, sX/usr/bin/pythonX/usr/bin/env pythonX
+
+don't really want to [[https://dubroy.com/blog/so-you-want-to-install-a-python-package/][install]] tilecache on system.  but, maybe i
+should.  okay, try installing on system.  "sudo pip install
+TileCache", okay, i expect that.  but, then need to
+#+BEGIN_EXAMPLE
+bash greg-minshalls-mbp-2: {1014} tilecache_install_config.py
+Unable to open destination file /etc/tilecache.cfg. Perhaps you need permission to write there?
+(Error was: [Errno 13] Permission denied: '/etc/tilecache.cfg')
+#+END_EXAMPLE
+so, need to run that su.  sigh.
+
+that didn't work so well...
+#+BEGIN_EXAMPLE
+bash greg-minshalls-mbp-2: {1015} sudo tilecache_install_config.py
+Unable to open source file.
+(Error was: [Errno 2] No such file or directory: '/sw/lib/python2.7/site-packages/TileCache/tilecache.cfg')
+#+END_EXAMPLE
+
+yuck:
+#+BEGIN_EXAMPLE
+grep tilecache.cfg /sw/lib/python2.7/site-packages/TileCache-2.11-py2.7.egg-info/*
+...
+/sw/lib/python2.7/site-packages/TileCache-2.11-py2.7.egg-info/installed-files.txt:../../../../TileCache/tilecache.cfg
+bash greg-minshalls-mbp-2: {1019} ls /sw/TileCache/
+tilecache.cfg
+#+END_EXAMPLE
+
+so, sudo mv back to where it should have been.
+#+BEGIN_EXAMPLE
+bash greg-minshalls-mbp-2: {1020} sudo mv /sw/TileCache/tilecache.cfg /sw/lib/python2.7/site-packages/TileCache/
+bash greg-minshalls-mbp-2: {1021} sudo rm /sw/TileCache/
+rm: /sw/TileCache/: is a directory
+bash greg-minshalls-mbp-2: {1022} sudo rmdir /sw/TileCache/
+#+END_EXAMPLE
+
+okay.  installed, with default tilecache.cfg.  but, following the example:
+#+BEGIN_EXAMPLE
+python tilecache_http_server.py
+#+END_EXAMPLE
+then, going to [[http://localhost:8080/1.0.0/basic/0/0/0.png]] is timing
+out.
+
+/etc/tilecache.cfg has only one map server unmapped out:
+#+BEGIN_EXAMPLE
+type=WMS
+url=http://labs.metacarta.com/wms/vmap0
+extension=png
+#+END_EXAMPLE
+
+and, that server doesn't appear to be existing.  right, that company
+appears to have gone under, or been absorbed.
+
+**** [[http://www.tornadoweb.org/en/stable/][tornado]] web server
+
+tilecache, at least, needs a web server.  maybe tornado (which is
+installed).  it has a native app interface, but also talks [[https://en.wikipedia.org/wiki/Web_Server_Gateway_Interface][WSGI]].
+(actually, tilecache can use its [python's?] own.)
+
+**** [[https://mapproxy.org/][mapproxy]]
+
+mapproxy is another candidate.  seems to be more recently developed.
+installs easily.  the following puts up nice screen (but, no maps
+yet!):
+#+BEGIN_EXAMPLE
+sudo aptitude install python-imaging python-yaml libproj0
+sudo easy_install mapproxy
+mapproxy-util create -t base-config ./
+mapproxy-util serve-develop ./mapproxy.yaml
+#+END_EXAMPLE
+
+to keep osm happy, i'll sign up for the (mapproxy default?)
+[[https://maps.omniscale.com/en][Omniscale]].  it says this is my url for wms services:
+
+#+name:WMSurl
+#+BEGIN_EXAMPLE
+http://maps.omniscale.net/v2/private-greg-minshall-c3613e25/style.default/map 
+#+END_EXAMPLE
 
 
-*** converting from 36 deg 45'32.99 to lat/lon
+*** now, how do we fill a screen with this stuff??
+
+we know how to get one tile.  but, that is the small part of a
+screen.  presumably, e.g., Leaflet figures out the size of the screen,
+or its window.  we'll just fudge
+
+#+name: parameters
+| aspect  |    1 | x:y     |
+| screenx | 1200 | pixels  |
+| screeny |  800 | pixels  |
+| tilex   |  500 | pixels? |
+| tiley   |  400 | pixels? |
+
+then, given a set of coordinates, that we want in the center of the
+screen, and a zoom level, figure out the list of tiles we need to
+request.
+
+*** converting from degrees minutes seconds to decimal lat/lon
 
 so: concat numbers after "'" as in [0,1) (by prepending a decimal
 point), divide by .6, add to number between "deg" and "'", and divide
