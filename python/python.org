@@ -1614,7 +1614,9 @@ request.
   # now, run through the list of tiles.  for each tile, download it,
   # then paste it into the right place in the image.
 
+  imx = 0
   for tx in range(tnwx, tsex+1):
+     imy = 0
      for ty in range(tnwy, tsey+1):
         # http://stackoverflow.com/a/22682/1527747
         url = "{u}/{z}/{x}/{y}.png".format(u=mapurl, z=zoom, x=tx, y=ty)
@@ -1627,7 +1629,12 @@ request.
         # wrap it in a BytesIO object, and use open() to load it.
         bio = io.BytesIO(data)
         im2 = PIL.Image.open(bio)
-  im2.show()
+        # now, paste this in the right place on the big image
+        im.paste(im2, box=(imx, imy))
+        imy += p['tiley']
+     imx += p['tilex']
+  im.show()
+  im.save("/Users/minshall/work/gis/python/foo.png")
 #+END_SRC
 
 #+RESULTS:
