@@ -1392,22 +1392,25 @@ http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
   def tilexyfixup(xtile, ytile, zoom):
     n = 2**zoom
 
+    print "tilexyfixup: ", xtile, ytile, zoom
     # deal with wrapping
     if xtile < 0:
       # if *x* is negative, reflect around x axis
-      xtile = n - (xtile%n)
+      xtile %= n
 
     if ytile < 0 or ytile > n:
       # if *y* out of bounds, negative, reflect around y axis
       nhalves = int(ytile/(n/2.0))  # how many halves of earth did we wrap?
       if nhalves%2 == 1:
-        ytile = n - (ytile%n)
+        ytile %= n
         # but, on the other side of the world
         xtile += n/2
 
     # make sure we're in 1..2**zoom
     xtile %= n
     ytile %= n
+
+    print xtile, ytile
   
     return (int(xtile), int(ytile))
 
@@ -1576,7 +1579,7 @@ screen, and a zoom level, figure out the list of tiles we need to
 request.
 
 #+name: bbox
-#+BEGIN_SRC python
+#+BEGIN_SRC python :results output verbatim
   <<deg2tilexy>>
 
   def bbox(lat, lon, zoom):
@@ -1672,28 +1675,43 @@ request.
         im.paste(im2, box=(imx, imy))
         imy += p['tiley']
      imx += p['tilex']
-  # im.show()
-  im.save("/Users/minshall/work/gis/python/foo.png")
+  im.show()
+  # im.save("/Users/minshall/work/gis/python/foo.png")
 #+END_SRC
 
 #+call: getpngs(zoom=0, lat=90, lon=0)
 
 #+RESULTS:
-: 90 0 0  ==>  0 0
-: 90 0 1  ==>  0 1
-: 90 0 2  ==>  0 2
-: swit, shit:  3 3
-: -1 1 1 3 4
-: 1 1 1 3 4
-: 1 1 1 3 4
 
-#+BEGIN_SRC python :results output verbatim
-<<deg2tilexy>>
-print tilexyfixup(4, 4, 2)
+#+BEGIN_SRC python :results output verbatim :var parms=parameters
+  <<bbox>>
+  <<deg2tilexy>>
+  p = {}
+  for i in parms:
+     p[i[0]] = i[1]
+  print bbox(0, 90, 0)
 #+END_SRC
 
 #+RESULTS:
-: (0, 0)
+#+begin_example
+tilexyfixup:  0 0 0
+0 0
+0 90 0  ==>  0 0
+tilexyfixup:  1 1 1
+1 1
+0 90 1  ==>  1 1
+tilexyfixup:  3 2 2
+3 2
+0 90 2  ==>  3 2
+swit, shit:  3 3
+2 1 4 3 4
+tilexyfixup:  2 1 2
+2 1
+tilexyfixup:  4 3 2
+0 3
+2 1 0 3 4
+(2, 1, 0, 3, 2)
+#+end_example
 
 *** converting from degrees minutes seconds to decimal lat/lon
 
