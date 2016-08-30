@@ -1361,8 +1361,20 @@ zero, it goes from 0 (180 degrees) to 2^zoom.  y goes from 0
 https://maps.wikimedia.org/osm-intl/7/61/36.png
 
 which more or less seems to work.  the same page give code in *all*
-available languages on how to do this.  here is the python
+available languages on how to do this.  here is the python.
 
+turns out mapproxy needs something slightly different.  hmm, it is
+using *huge* coordinates:
+#+BEGIN_EXAMPLE
+bash greg-minshalls-mbp-2: {1022} mapproxy-util grids -f mapproxy.yaml
+webmercator:
+    Configuration:
+        base: 'GLOBAL_WEBMERCATOR'
+        bbox*: [-20037508.342789244, -20037508.342789244, 20037508.342789244, 20037508.342789244]
+        origin*: 'ul'
+        tile_size*: [256, 256]
+    ...
+#+END_EXAMPLE
 
 #+name: deg2xy
 #+BEGIN_SRC python
@@ -1377,21 +1389,26 @@ available languages on how to do this.  here is the python
 #+END_SRC
 
 #+name: deg2url
-#+BEGIN_SRC python :var lat=36.4 :var lon=-121.858 :var zoom=10 :var mapurl="http://127.0.0.1:8080/osm-intl" :var oldmapurl="https://maps.wikimedia.org/osm-intl"
+#+BEGIN_SRC python :var lat=36.4 :var lon=-121.858 :var zoom=5 :var mapurl="http://localhost:8080/tiles/osm/webmercator" ymapurl="http://127.0.0.1:8080/tms/1.0.0/osm/webmercator" :var oldmapurl="https://maps.wikimedia.org/osm-intl"
   <<deg2xy>>
   x,y = deg2xy(lat, lon, zoom)
   return "{m}/{z}/{x}/{y}.png".format(m=mapurl, z=zoom, x=x, y=y)
 #+END_SRC
 
 #+RESULTS: deg2url
-: http://127.0.0.1:8080/osm-intl/10/165/400.png
+: http://localhost:8080/tiles/osm/webmercator/5/5/12.png
 
-#+CALL: deg2url(zoom=11)
+#+CALL: deg2url(zoom=0)
 
 #+RESULTS:
-: https://maps.wikimedia.org/osm-intl/11/330/801.png
+: 36.4 -121.858 0
+: 0.635299847726
+: 1.0
+: 0
+: 0
+: http://127.0.0.1:8080/tms/1.0.0/osm/webmercator/0/0/0.png
 
-okay.  but, i'd better put up some sort of cache before going much
+Okay.  but, i'd better put up some sort of cache before going much
 further.
 
 *** caching
@@ -1492,6 +1509,10 @@ to keep osm happy, i'll sign up for the (mapproxy default?)
 http://maps.omniscale.net/v2/private-greg-minshall-c3613e25/style.default/map 
 #+END_EXAMPLE
 
+start mapproxy via
+
+: mapproxy-util serve-develop ./mapproxy.yaml
+
 
 *** now, how do we fill a screen with this stuff??
 
@@ -1509,6 +1530,10 @@ or its window.  we'll just fudge
 then, given a set of coordinates, that we want in the center of the
 screen, and a zoom level, figure out the list of tiles we need to
 request.
+
+http://127.0.0.1:8080/tms/1.0.0/osm/webmercator/0/0/0.png this should
+be the whole world.  instead, what i get is South America and part of
+Antarctica.
 
 *** converting from degrees minutes seconds to decimal lat/lon
 
