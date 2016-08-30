@@ -1584,7 +1584,11 @@ request.
 
      # check to see if we are zoomed too far out
      if tnw[0] < 0 or tse[0] >= 2**zoom or tnw[1] < 0 or tse[1] >= 2**zoom:
-        return bbox(lat, lon, zoom+1)
+        print tnw, tse, 2**zoom
+        if (zoom < 18):
+           return bbox(lat, lon, zoom+1)
+        else:
+           return (tnw[0], tnw[1], tse[0], tse[1], zoom)
      else:
         return (tnw[0], tnw[1], tse[0], tse[1], zoom)
 #+END_SRC
@@ -1640,9 +1644,30 @@ request.
   im.save("/Users/minshall/work/gis/python/foo.png")
 #+END_SRC
 
-#+call: getpngs(lat=0.0, lon=0.0, zoom=0)
+#+call: getpngs(zoom=0, lat=90, lon=0)
 
 #+RESULTS:
+#+begin_example
+(-2, -7) (2, -3) 1
+(-1, -13) (3, -9) 2
+(0, -24) (4, -20) 4
+(2, -46) (6, -42) 8
+(6, -90) (10, -86) 16
+(14, -179) (18, -175) 32
+(30, -357) (34, -353) 64
+(62, -712) (66, -708) 128
+(126, -1423) (130, -1419) 256
+(254, -2844) (258, -2840) 512
+(510, -5687) (514, -5683) 1024
+(1022, -11372) (1026, -11368) 2048
+(2046, -22742) (2050, -22738) 4096
+(4094, -45482) (4098, -45478) 8192
+(8190, -90963) (8194, -90959) 16384
+(16382, -181925) (16386, -181921) 32768
+(32766, -363849) (32770, -363845) 65536
+(65534, -727696) (65538, -727692) 131072
+(131070, -1455390) (131074, -1455386) 262144
+#+end_example
 
 
 
@@ -1715,3 +1740,18 @@ protocol]] in JSON.
 
 given a lat/lon (in decimal), and a zoom level, find the screen pixel
 coordinates.
+
+the [[http://wiki.openstreetmap.org/wiki/Zoom_levels][osm wiki zoom level page]] lists, e.g., meters/tile for each zoom level,
+and says that
+: S=C*cos(y)/2^(z+8)
+where
+- S = meters/pixel
+- C = circumference of the earth = [[https://en.wikipedia.org/wiki/Equator#Exact_length_of_the_Equator][40075.016686 km]]
+- z = zoom level
+- y = latitude
+
+the above osm wiki page points at [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Resolution_and_Scale][this other page]] for better
+algorithms, etc., which gives this formula
+: resolution = 156543.03 meters/pixel * cos(latitude) / (2 ^ zoomlevel)
+
+(of course, *i* have coordinates in lat/lon, *not* meters.  still...)
