@@ -1314,6 +1314,8 @@ how do we get our polygon positioned over a map (in the background).
 one can [[http://stackoverflow.com/a/21768191/1527747][draw polygons in PIL]].  (really, in [[https://github.com/python-pillow/Pillow][Pillow]].)  sadly, though, as
 built on fink, it uses Preview to display images.
 
+([[http://opencv-python-tutroals.readthedocs.io/en/latest/index.html][opencv]] ([[http://opencv.org/][home page]]) is another image library for python.)
+
 so, use geotiler to get image, then plot.
 
 for matplotlib, [[http://www.labri.fr/perso/nrougier/teaching/matplotlib/][here]] is something talking about maps, pointing at
@@ -1603,13 +1605,14 @@ request.
   # images: http://pillow.readthedocs.io/en/latest/reference/Image.html
   # (maybe starting by creating an image with Image.new()?)
 
-  wit = tsex-tnwx
-  hit = tsey-tnwy
+  wit = (tsex-tnwx)+1
+  hit = (tsey-tnwy)+1
 
-  iwp = p['screenx']*wit
-  ihp = p['screeny']*hit
+  iwp = p['tilex']*wit
+  ihp = p['tiley']*hit
 
   im = PIL.Image.new("RGB", (iwp, ihp))
+  print iwp, ihp, im.getbbox()
 
   # now, run through the list of tiles.  for each tile, download it,
   # then paste it into the right place in the image.
@@ -1631,39 +1634,66 @@ request.
         im2 = PIL.Image.open(bio)
         # now, paste this in the right place on the big image
         im.paste(im2, box=(imx, imy))
+        print im.getbbox(), len(im.getdata())
         imy += p['tiley']
      imx += p['tilex']
-  im.show()
+  #im.show()
   im.save("/Users/minshall/work/gis/python/foo.png")
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
+1280 1280 None
 http://localhost:8080/tiles/osm/webmercator/5/3/10.png
+(0, 0, 256, 256) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/3/11.png
+(0, 0, 256, 512) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/3/12.png
+(0, 0, 256, 768) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/3/13.png
+(0, 0, 256, 1024) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/3/14.png
+(0, 0, 256, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/4/10.png
+(0, 0, 512, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/4/11.png
+(0, 0, 512, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/4/12.png
+(0, 0, 512, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/4/13.png
+(0, 0, 512, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/4/14.png
+(0, 0, 512, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/5/10.png
+(0, 0, 768, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/5/11.png
+(0, 0, 768, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/5/12.png
+(0, 0, 768, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/5/13.png
+(0, 0, 768, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/5/14.png
+(0, 0, 768, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/6/10.png
+(0, 0, 1024, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/6/11.png
+(0, 0, 1024, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/6/12.png
+(0, 0, 1024, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/6/13.png
+(0, 0, 1024, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/6/14.png
+(0, 0, 1024, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/7/10.png
+(0, 0, 1280, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/7/11.png
+(0, 0, 1280, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/7/12.png
+(0, 0, 1280, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/7/13.png
+(0, 0, 1280, 1280) 1638400
 http://localhost:8080/tiles/osm/webmercator/5/7/14.png
+(0, 0, 1280, 1280) 1638400
 #+end_example
 
 
