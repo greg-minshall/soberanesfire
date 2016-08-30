@@ -1564,6 +1564,7 @@ request.
      """
 
      import math
+     print lat, lon, zoom
 
      tcenterx,tcentery = deg2tilexy(lat, lon, zoom)
 
@@ -1579,19 +1580,43 @@ request.
      if shit % 2 == 0:                 # enforce oddness, so we *have* a
         shit += 1                      # center XXX
 
-     tnw = (tcenterx - ((swit+1)/2), tcentery - ((shit+1)/2))
-     tse = (tcenterx + ((swit+1)/2), tcentery + ((shit+1)/2))
+     tnwx, tnwy = (tcenterx - ((swit+1)/2), tcentery - ((shit+1)/2))
+     tsex, tsey = (tcenterx + ((swit+1)/2), tcentery + ((shit+1)/2))
 
-     # check to see if we are zoomed too far out
-     if tnw[0] < 0 or tse[0] >= 2**zoom or tnw[1] < 0 or tse[1] >= 2**zoom:
-        print tnw, tse, 2**zoom
-        if (zoom < 18):
-           return bbox(lat, lon, zoom+1)
-        else:
-           return (tnw[0], tnw[1], tse[0], tse[1], zoom)
-     else:
-        return (tnw[0], tnw[1], tse[0], tse[1], zoom)
+     zoomexp = 2**zoom            # just for convenience
+     # check to see if we are zoomed too far out, wrapped around, or some such
+     print swit, shit, tnwx, tnwy, tsex, tsey, 2**zoom
+     if tnwy < 0:                 # we've wrapped over the north pole
+        # (tnwy % shit) is how far we are from north pole, so go that
+        # far from it on *this* side
+        tnwy = tnwy % shit
+        tnwx += zoomexp/2         # but, on the opposite side of the world
+     if tsey >= shit:             # we've wrapped under the south pole
+        # here, want to be (tsey%shit) away from south pole (max)
+        tsey = shit - (tsey % shit)
+        tsex += zoomexp/2         # but, again, around the world
+     if tnwx < 0:        # we've wrapped around to the west
+        # (twnx % swit) is how far we are from 0
+        tnwx = swit - (tnwx % swit)
+     if tsex >= swit:    # we've wrapped around to the east
+        tsex = tsex % swit
+
+     return (tnwx, tnwy, tsex, tsey, zoom)
 #+END_SRC
+
+#+BEGIN_SRC python :results output verbatim :var lat=90 :var lon=0 :var zoom=0 :var parms=parameters
+  <<bbox>>
+  p = {}
+  for i in parms:
+     p[i[0]] = i[1]
+
+  print bbox(lat, lon, zoom)
+#+END_SRC
+
+#+RESULTS:
+: 90 0 0
+: 3 3 -2 -7 2 -3 1
+: (2, 2, 2, -3, 0)
 
 #+name: getpngs
 #+BEGIN_SRC python :results output verbatim :var lat=36.4 :var lon=-121.858 :var zoom=5 :var parms=parameters :var mapurl=MAPURL
@@ -1644,30 +1669,9 @@ request.
   im.save("/Users/minshall/work/gis/python/foo.png")
 #+END_SRC
 
-#+call: getpngs(zoom=0, lat=90, lon=0)
+#+call: getpngs(zoom=0, lat=0, lon=180)
 
 #+RESULTS:
-#+begin_example
-(-2, -7) (2, -3) 1
-(-1, -13) (3, -9) 2
-(0, -24) (4, -20) 4
-(2, -46) (6, -42) 8
-(6, -90) (10, -86) 16
-(14, -179) (18, -175) 32
-(30, -357) (34, -353) 64
-(62, -712) (66, -708) 128
-(126, -1423) (130, -1419) 256
-(254, -2844) (258, -2840) 512
-(510, -5687) (514, -5683) 1024
-(1022, -11372) (1026, -11368) 2048
-(2046, -22742) (2050, -22738) 4096
-(4094, -45482) (4098, -45478) 8192
-(8190, -90963) (8194, -90959) 16384
-(16382, -181925) (16386, -181921) 32768
-(32766, -363849) (32770, -363845) 65536
-(65534, -727696) (65538, -727692) 131072
-(131070, -1455390) (131074, -1455386) 262144
-#+end_example
 
 
 
