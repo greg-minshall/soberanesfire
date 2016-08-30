@@ -1384,11 +1384,12 @@ Antarctica.  ah, but i'm using the wrong scheme with mapproxy.  i
 should be using
 http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
 
-#+name: deg2xy
+#+name: deg2tilexy
 #+BEGIN_SRC python
   # from http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
   import math
-  def deg2xy(lat_deg, lon_deg, zoom):
+  def deg2tilexy(lat_deg, lon_deg, zoom):
+    """give lat/lon (in decimal) and a zoom, return the tilex and tiley coordinates of the required tile"""
     lat_rad = math.radians(lat_deg)
     n = 2.0 ** zoom
     xtile = int((lon_deg + 180.0) / 360.0 * n)
@@ -1401,8 +1402,8 @@ http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
 
 #+name: deg2url
 #+BEGIN_SRC python :var lat=36.4 :var lon=-121.858 :var zoom=5 :var mapurl=MAPURL
-  <<deg2xy>>
-  x,y = deg2xy(lat, lon, zoom)
+  <<deg2tilexy>>
+  x,y = deg2tilexy(lat, lon, zoom)
   return "{m}/{z}/{x}/{y}.png".format(m=mapurl, z=zoom, x=x, y=y)
 #+END_SRC
 
@@ -1551,7 +1552,7 @@ request.
 
 #+name: bbox
 #+BEGIN_SRC python
-  <<deg2xy>>
+  <<deg2tilexy>>
 
   def bbox(lat, lon, zoom):
      """given (LAT, LON), a set of coordinates, and ZOOM, a [proposed] zoom
@@ -1564,7 +1565,7 @@ request.
 
      import math
 
-     tcenterx,tcentery = deg2xy(lat, lon, zoom)
+     tcenterx,tcentery = deg2tilexy(lat, lon, zoom)
 
      # so, tcenterx,tcentery is tile coordinates of the center of the map.  now get
      # the height of the screen in tiles.  (in case you're wondering,
@@ -1583,11 +1584,12 @@ request.
 
      # check to see if we are zoomed too far out
      if tnw[0] < 0 or tnw[1] < 0:
-        return tilenos(lat, lon, zoom+1)
+        return bbox(lat, lon, zoom+1)
      else:
         return (tnw[0], tnw[1], tse[0], tse[1], zoom)
 #+END_SRC
 
+#+name: getpngs
 #+BEGIN_SRC python :results output verbatim :var lat=36.4 :var lon=-121.858 :var zoom=5 :var parms=parameters :var mapurl=MAPURL
   import io
   import PIL.Image
@@ -1612,7 +1614,6 @@ request.
   ihp = p['tiley']*hit
 
   im = PIL.Image.new("RGB", (iwp, ihp))
-  print iwp, ihp, im.getbbox()
 
   # now, run through the list of tiles.  for each tile, download it,
   # then paste it into the right place in the image.
@@ -1623,7 +1624,6 @@ request.
      for ty in range(tnwy, tsey+1):
         # http://stackoverflow.com/a/22682/1527747
         url = "{u}/{z}/{x}/{y}.png".format(u=mapurl, z=zoom, x=tx, y=ty)
-        print url
         response = urllib2.urlopen(url)
         data = response.read()
         # [[http://pillow.readthedocs.io/en/latest/reference/Image.html][PIL.Image.frombytes()
@@ -1634,67 +1634,15 @@ request.
         im2 = PIL.Image.open(bio)
         # now, paste this in the right place on the big image
         im.paste(im2, box=(imx, imy))
-        print im.getbbox(), len(im.getdata())
         imy += p['tiley']
      imx += p['tilex']
-  #im.show()
+  im.show()
   im.save("/Users/minshall/work/gis/python/foo.png")
 #+END_SRC
 
+#+call: getpngs(lat=0.0, lon=0.0, zoom=0)
+
 #+RESULTS:
-#+begin_example
-1280 1280 None
-http://localhost:8080/tiles/osm/webmercator/5/3/10.png
-(0, 0, 256, 256) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/3/11.png
-(0, 0, 256, 512) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/3/12.png
-(0, 0, 256, 768) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/3/13.png
-(0, 0, 256, 1024) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/3/14.png
-(0, 0, 256, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/4/10.png
-(0, 0, 512, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/4/11.png
-(0, 0, 512, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/4/12.png
-(0, 0, 512, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/4/13.png
-(0, 0, 512, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/4/14.png
-(0, 0, 512, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/5/10.png
-(0, 0, 768, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/5/11.png
-(0, 0, 768, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/5/12.png
-(0, 0, 768, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/5/13.png
-(0, 0, 768, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/5/14.png
-(0, 0, 768, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/6/10.png
-(0, 0, 1024, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/6/11.png
-(0, 0, 1024, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/6/12.png
-(0, 0, 1024, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/6/13.png
-(0, 0, 1024, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/6/14.png
-(0, 0, 1024, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/7/10.png
-(0, 0, 1280, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/7/11.png
-(0, 0, 1280, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/7/12.png
-(0, 0, 1280, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/7/13.png
-(0, 0, 1280, 1280) 1638400
-http://localhost:8080/tiles/osm/webmercator/5/7/14.png
-(0, 0, 1280, 1280) 1638400
-#+end_example
 
 
 
@@ -1757,4 +1705,13 @@ by 60.
 : ("36 09'00.00 N", "121 23'51.80 W")
 : {'se': [36.15, -121.39772222222223], 'nw': [36.57666666666667, -122.0703]}
 
-openstreetmap has a [[http://ojw.dev.openstreetmap.org/StaticMap/?api=json][page]] that describes their [[http://ojw.dev.openstreetmap.org/StaticMap/?mode=API][map tile protocol]] in JSON.
+openstreetmap has a
+[[http://ojw.dev.openstreetmap.org/StaticMap/?api=json][page]] that
+describes their
+[[http://ojw.dev.openstreetmap.org/StaticMap/?mode=API][map tile
+protocol]] in JSON.
+
+*** converting from decimal lat/lon to a position on the screen
+
+given a lat/lon (in decimal), and a zoom level, find the screen pixel
+coordinates.
