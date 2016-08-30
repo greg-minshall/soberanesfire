@@ -1587,6 +1587,7 @@ request.
 #+END_SRC
 
 #+BEGIN_SRC python :results output verbatim :var lat=36.4 :var lon=-121.858 :var zoom=5 :var parms=parameters :var mapurl=MAPURL
+  import io
   import PIL.Image
   import urllib2
 
@@ -1619,15 +1620,45 @@ request.
         url = "{u}/{z}/{x}/{y}.png".format(u=mapurl, z=zoom, x=tx, y=ty)
         print url
         response = urllib2.urlopen(url)
-        html = response.read()
+        data = response.read()
+        # [[http://pillow.readthedocs.io/en/latest/reference/Image.html][PIL.Image.frombytes()
+        # doc]] says: Note that this function decodes pixel data only,
+        # not entire images. If you have an entire image in a string,
+        # wrap it in a BytesIO object, and use open() to load it.
+        bio = io.BytesIO(data)
+        im2 = PIL.Image.open(bio)
+  im2.show()
 #+END_SRC
 
 #+RESULTS:
-| 3 | 10 |
-| 4 | 11 |
-| 5 | 12 |
-| 6 | 13 |
-| 7 | 14 |
+#+begin_example
+http://localhost:8080/tiles/osm/webmercator/5/3/10.png
+http://localhost:8080/tiles/osm/webmercator/5/3/11.png
+http://localhost:8080/tiles/osm/webmercator/5/3/12.png
+http://localhost:8080/tiles/osm/webmercator/5/3/13.png
+http://localhost:8080/tiles/osm/webmercator/5/3/14.png
+http://localhost:8080/tiles/osm/webmercator/5/4/10.png
+http://localhost:8080/tiles/osm/webmercator/5/4/11.png
+http://localhost:8080/tiles/osm/webmercator/5/4/12.png
+http://localhost:8080/tiles/osm/webmercator/5/4/13.png
+http://localhost:8080/tiles/osm/webmercator/5/4/14.png
+http://localhost:8080/tiles/osm/webmercator/5/5/10.png
+http://localhost:8080/tiles/osm/webmercator/5/5/11.png
+http://localhost:8080/tiles/osm/webmercator/5/5/12.png
+http://localhost:8080/tiles/osm/webmercator/5/5/13.png
+http://localhost:8080/tiles/osm/webmercator/5/5/14.png
+http://localhost:8080/tiles/osm/webmercator/5/6/10.png
+http://localhost:8080/tiles/osm/webmercator/5/6/11.png
+http://localhost:8080/tiles/osm/webmercator/5/6/12.png
+http://localhost:8080/tiles/osm/webmercator/5/6/13.png
+http://localhost:8080/tiles/osm/webmercator/5/6/14.png
+http://localhost:8080/tiles/osm/webmercator/5/7/10.png
+http://localhost:8080/tiles/osm/webmercator/5/7/11.png
+http://localhost:8080/tiles/osm/webmercator/5/7/12.png
+http://localhost:8080/tiles/osm/webmercator/5/7/13.png
+http://localhost:8080/tiles/osm/webmercator/5/7/14.png
+#+end_example
+
 
 
 *** converting from degrees minutes seconds to decimal lat/lon
