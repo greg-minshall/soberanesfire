@@ -1582,6 +1582,24 @@ request.
 #+BEGIN_SRC python :results output verbatim
   <<deg2tilexy>>
 
+  class BBox:
+     def __init__(self, tnwx, tnwy, wit, hit, zoom):
+        self.tnwx = tnwx
+        self.tnwy = tnwy
+        self.wit = wit
+        self.hit = hit
+        self.zoom = zoom
+        self.xoffset = None
+        self.yoffset = None
+     def __iter__(self):
+        self.xoffset = 0
+        for tx in map(lambda x: (x+self.tnwx)%(2**self.zoom), range(self.wit)):
+           self.yoffset = 0
+           for ty in map(lambda y: (y+self.tnwy)%(2**self.zoom), range(self.hit)):
+              yield (tx, ty)
+              self.yoffset += 1
+           self.xoffset += 1
+
   def bbox(lat, lon, zoom):
      """given (LAT, LON), a set of coordinates, and ZOOM, a [proposed] zoom
      level, return the "bounding box" of tiles we want to fill the
@@ -1594,7 +1612,7 @@ request.
      import math
 
      zoomexp = 2**zoom            # just for convenience
-   
+
      tcenterx,tcentery = deg2tilexy(lat, lon, zoom)
      print lat, lon, zoom, " ==> ", tcenterx, tcentery
 
@@ -1658,9 +1676,10 @@ request.
 
   print tnwx, tnwy, tsex, tsey, 2**zoom
   imx = 0
-  for tx in range(tnwx, tsex+1):
+  for tx in map(lambda x: (x+tnwx)%(2**zoom), range(swit)):
      imy = 0
-     for ty in range(tnwy, tsey+1):
+     for ty in map(lambda y: (y+tnwy)%(2**zoom), range(shit)):
+        print tx, ty
         # http://stackoverflow.com/a/22682/1527747
         url = "{u}/{z}/{x}/{y}.png".format(u=mapurl, z=zoom, x=tx, y=ty)
         response = urllib2.urlopen(url)
@@ -1675,7 +1694,7 @@ request.
         im.paste(im2, box=(imx, imy))
         imy += p['tiley']
      imx += p['tilex']
-  im.show()
+  # im.show()
   # im.save("/Users/minshall/work/gis/python/foo.png")
 #+END_SRC
 
