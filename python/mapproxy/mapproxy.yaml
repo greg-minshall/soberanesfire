@@ -50,7 +50,6 @@ sources:
   osm_wms:
     type: wms
     req:
-      # use of this source is only permitted for testing
       url: http://maps.omniscale.net/v2/private-greg-minshall-c3613e25/style.default/map
       layers: osm
 
