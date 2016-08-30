@@ -256,3 +256,31 @@ on stackexchage).  maybe cgal [[http://doc.cgal.org/latest/Manual/packages.html#
 ** cleaning up input
 
 [[http://grokbase.com/t/r/r-sig-geo/12cezp33rh/cleaning-up-self-intersections][here]] is a 2012/2013 discussion of cleaning up polygons.
+** GIS: projection and datum
+
+[[https://www.maptoaster.com/maptoaster-topo-nz/articles/projection/datum-projection.html][here]] is an introduction.  different datum's give you different
+latitude/longitude lines!  projections just specify how those lines
+are displayed on a 2-dimensional map.  
+
+[[http://www.linz.govt.nz/data/geodetic-system/datums-projections-and-heights/geodetic-datums/new-zealand-geodetic-datum-2000-nzgd2000][apparently]] New Zealand's new datum, NZGD2000, is fixed to the plate on
+which NZ sits, so moves w.r.t., e.g., WGS84.  so, converting between
+NZGD2000 and, e.g., WGS84, one needs to know that date as well as
+coordinates.  the above article says that from 2000 to 2015 about 75cm
+of movement has occurred.  here is a table describing NZGD200:
+
+| Abbreviation        | NZGD2000               |
+| Reference ellipsoid | [[http://www.linz.govt.nz/data/geodetic-system/datums-projections-and-heights/geodetic-datums/reference-ellipsoids][GRS80]]                  |
+| Reference frame     | ITRF96                 |
+| Reference epoch     | 1 January 2000         |
+| Deformation model   | [[http://www.linz.govt.nz/data/geodetic-system/datums-projections-and-heights/geodetic-datums/new-zealand-geodetic-datum-2000-nzgd2000/nzgd2000-deformation][LINZ deformation model]] | 
+
+the [[http://www.linz.govt.nz/data/geodetic-system/datums-projections-and-heights/geodetic-datums/reference-ellipsoids][GRS80]] page says that an ellipsoidal model of the earth *can* be
+off by as much as 100 meters (at some locations, presumably).  
+
+
+[[http://resources.esri.com/help/9.3/ArcGISEngine/dotnet/89b720a5-7339-44b0-8b58-0f5bf2843393.htm][ESRI's page]] is good.
+
+(the [[https://developers.google.com/kml/documentation/kmlreference#elements-specific-to-model][entry for <Model>]] in the KML reference documentation implies that
+KML's lat/lon's are WGS84.  and, [[https://en.wikipedia.org/wiki/Keyhole_Markup_Language][the KML Wikipedia page]] confirms that.)
+
+[[http://epsg.io/4326][epsg.4326]]: "WGS 84 -- WGS84 - World Geodetic System 1984, used in GPS"
