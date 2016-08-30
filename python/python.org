@@ -1376,6 +1376,12 @@ webmercator:
     ...
 #+END_EXAMPLE
 
+http://127.0.0.1:8080/tms/1.0.0/osm/webmercator/0/0/0.png this should
+be the whole world.  instead, what i get is South America and part of
+Antarctica.  ah, but i'm using the wrong scheme with mapproxy.  i
+should be using
+http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
+
 #+name: deg2xy
 #+BEGIN_SRC python
   # from http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
@@ -1388,8 +1394,11 @@ webmercator:
     return (xtile, ytile)
 #+END_SRC
 
+#+name: MAPURL
+: http://localhost:8080/tiles/osm/webmercator
+
 #+name: deg2url
-#+BEGIN_SRC python :var lat=36.4 :var lon=-121.858 :var zoom=5 :var mapurl="http://localhost:8080/tiles/osm/webmercator" ymapurl="http://127.0.0.1:8080/tms/1.0.0/osm/webmercator" :var oldmapurl="https://maps.wikimedia.org/osm-intl"
+#+BEGIN_SRC python :var lat=36.4 :var lon=-121.858 :var zoom=5 :var mapurl=MAPURL
   <<deg2xy>>
   x,y = deg2xy(lat, lon, zoom)
   return "{m}/{z}/{x}/{y}.png".format(m=mapurl, z=zoom, x=x, y=y)
@@ -1398,15 +1407,10 @@ webmercator:
 #+RESULTS: deg2url
 : http://localhost:8080/tiles/osm/webmercator/5/5/12.png
 
-#+CALL: deg2url(zoom=0)
+#+CALL: deg2url(zoom=15)
 
 #+RESULTS:
-: 36.4 -121.858 0
-: 0.635299847726
-: 1.0
-: 0
-: 0
-: http://127.0.0.1:8080/tms/1.0.0/osm/webmercator/0/0/0.png
+: http://localhost:8080/tiles/osm/webmercator/15/5292/12822.png
 
 Okay.  but, i'd better put up some sort of cache before going much
 further.
@@ -1501,8 +1505,20 @@ mapproxy-util create -t base-config ./
 mapproxy-util serve-develop ./mapproxy.yaml
 #+END_EXAMPLE
 
+
+
+*** map sources
+
+**** omniscale
+
 to keep osm happy, i'll sign up for the (mapproxy default?)
 [[https://maps.omniscale.com/en][Omniscale]].  it says this is my url for wms services:
+
+**** [[https://wiki.openstreetmap.org/wiki/Static_map_images][static maps]]
+
+OSM static maps are another possible solution.  the [[http://staticmap.openstreetmap.de/][.de version]]
+possibly offers topo maps:
+: staticmap.openstreetmap.de/staticmap.php?center=36.4,-121.858&zoom=14&size=865x512&maptype=topo
 
 #+name:WMSurl
 #+BEGIN_EXAMPLE
@@ -1524,16 +1540,66 @@ or its window.  we'll just fudge
 | aspect  |    1 | x:y     |
 | screenx | 1200 | pixels  |
 | screeny |  800 | pixels  |
-| tilex   |  500 | pixels? |
-| tiley   |  400 | pixels? |
+| tilex   |  256 | pixels? |
+| tiley   |  256 | pixels? |
 
 then, given a set of coordinates, that we want in the center of the
 screen, and a zoom level, figure out the list of tiles we need to
 request.
 
-http://127.0.0.1:8080/tms/1.0.0/osm/webmercator/0/0/0.png this should
-be the whole world.  instead, what i get is South America and part of
-Antarctica.
+#+name: bbox
+#+BEGIN_SRC python :var lat=36.4 :var lon=-121.858 :var zoom=5 :var mapurl=MAPURL :var parms=parameters
+  """given (LAT, LON), a set of coordinates, and ZOOM, a [proposed] zoom
+  level, return the "bounding box" of tiles we want to fill the screen.
+  we *also* return a (possibly) updated zoom level, in case the input
+  zoom level was so small that it wouldn't support filling the whole
+  screen
+
+  """
+
+  <<deg2xy>>
+
+  def tilenos(lat, lon, zoom):
+     """actually do the work"""
+     import math
+
+     tx,ty = deg2xy(lat, lon, zoom)
+
+     # so, tx,ty is tile coordinates of the center of the map.  now get
+     # the height of the screen in tiles.  (in case you're wondering,
+     # sorry, but "screen with in tiles", "screen height in tiles")
+     swit = int(math.ceil((p['screenx']*1.0)/(p['tilex']*1.0)))
+     shit = int(math.ceil((p['screeny']*1.0)/(p['tiley']*1.0)))
+     swit = min(swit, 3)
+     shit = min(swit, 3)                 # enforce some minimum
+     if swit % 2 == 0:
+        swit += 1
+     if shit % 2 == 0:                 # enforce oddness, so we *have* a
+        shit += 1                      # center XXX
+
+     snw = (tx - ((swit+1)/2), ty - ((shit+1)/2))
+     sse = (tx + ((swit+1)/2), ty + ((shit+1)/2))
+
+     # check to see if we are zoomed too far out
+     if snw[0] < 0 or snw[1] < 0:
+        return tilenos(lat, lon, zoom+1)
+     else:
+        return (snw[0], snw[1], sse[0], sse[1], zoom, tx, ty)
+
+  p = {}
+  for i in parms:
+     p[i[0]] = i[1]
+
+  return tilenos(lat, lon, zoom)
+#+END_SRC
+
+#+RESULTS: bbox
+| 3 | 10 | 7 | 14 | 5 | 5 | 12 |
+
+#+CALL: bbox(lat=0, lon=0, zoom=0)
+
+#+RESULTS:
+| 0 | 0 | 4 | 4 | 2 | 2 | 2 |
 
 *** converting from degrees minutes seconds to decimal lat/lon
 
