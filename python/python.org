@@ -1349,7 +1349,6 @@ okay, gnuplot info file (commands:plot:binary:keywords) talks about
 
 #+name: PpShape
 #+BEGIN_SRC python
-  from matplotlib import pyplot
 
   class PpShape:
       """plotting Shapely objects using pyplot."""
@@ -1359,6 +1358,7 @@ okay, gnuplot info file (commands:plot:binary:keywords) talks about
           self.__setdefaults__()
 
       def reset(self):
+          from matplotlib import pyplot
           self.fig = pyplot.figure(1, figsize=(5,5), dpi=90)
           # for '111': http://stackoverflow.com/a/6981055/1527747
           # for 'aspect=1.0': http://stackoverflow.com/q/7965743/1527747
@@ -1505,6 +1505,7 @@ okay, gnuplot info file (commands:plot:binary:keywords) talks about
           self.ax.imshow(image, **kwargs)
 
       def plot(self, **kwargs):
+          from matplotlib import pyplot
           defs = self.__mergedefaults__(**kwargs)
 
           ignore = self.ax.set_title('Polygon')
@@ -1593,67 +1594,14 @@ Antarctica.  ah, but i'm using the wrong scheme with mapproxy.  i
 should be using
 http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
 
-#+name: deg2tilexy
-#+BEGIN_SRC python
-  import math
-
-  def tilexyfixup(xtile, ytile, zoom):
-    n = 2**zoom
-
-    # print "tilexyfixup: called with: xtile, ytile, zoom: ", xtile, ytile, zoom
-    # deal with wrapping
-    if xtile < 0:
-      # if *x* is negative, reflect around x axis (redundantly, see below)
-      xtile %= n
-
-    if ytile < 0 or ytile > n:
-      # first, do we need to go to the other side of the world?
-      nhalves = int(ytile/(n/2.0))  # how many halves of earth did we wrap?
-      # print "nhalves ", nhalves
-      if nhalves%2 == 0:
-        # yes, on the other side of the world
-        xtile += n/2
-      # if *y* out of bounds, negative, reflect around y axis, which
-      # basically means absolute value (so, the distance to the relevant
-      # pole stays the same)
-      if ytile < 0:
-        ytile = abs(ytile)        # reflect around the N pole
-      else:
-        ytile = n - (ytile%n)     # reflect around the S pole
-
-    # make sure we're in 1..2**zoom
-    xtile %= n
-    ytile %= n
-
-    xtile = int(xtile)
-    ytile = int(ytile)
-
-    # print "tilexyfixup returning (xtile, ytile): ", xtile, ytile
-
-    return (xtile, ytile)
-
-
-  def deg2tilexy(lat_deg, lon_deg, zoom):
-    """give lat/lon (in decimal) and a zoom, return the tilex and tiley coordinates of the required tile"""
-  # from http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
-    lat_rad = math.radians(lat_deg)
-    n = 2.0 ** zoom
-    # print "lat_deg lat_rad lon_deg zoom: ", lat_deg, lat_rad, lon_deg, zoom
-    xtile = int(((lon_deg + 180.0) / 360.0) * n)
-    ytile = int(((1.0 - ((math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad)))) / math.pi))) * (n/2.0))
-
-    return tilexyfixup(xtile, ytile, zoom)
-#+END_SRC
-
 #+name: deg2url
 #+BEGIN_SRC python :var lat=36.4 :var lon=-121.858 :var zoom=5 :var mapurl=MAPURL
-  <<deg2tilexy>>
-  x,y = deg2tilexy(lat, lon, zoom)
+  <<tbbox>>
+  x,y = TBBox.deg2tilexy(lat, lon, zoom)
   return "{m}/{z}/{x}/{y}.png".format(m=mapurl, z=zoom, x=x, y=y)
 #+END_SRC
 
 #+RESULTS: deg2url
-: http://localhost:8080/tiles/osm/webmercator/5/5/12.png
 
 #+CALL: deg2url(zoom=15)
 
@@ -1790,89 +1738,137 @@ request.
 
 #+name: tbbox
 #+BEGIN_SRC python :results output verbatim
-  <<deg2tilexy>>
-
   class TBBox:                    # a Tile Bounding Box
-     import zoom
-     def __init__(self, tnwx, tnwy, wit, hit, zoom):
-        self.tnwx = tnwx
-        self.tnwy = tnwy
-        self.wit = wit
-        self.hit = hit
-        self.zoom = zoom
-     def __iter__(self):
-        xoff = 0
-        for tx in map(lambda x: (x+self.tnwx)%(2**self.zoom), range(self.wit)):
-           yoff = 0
-           for ty in map(lambda y: (y+self.tnwy)%(2**self.zoom), range(self.hit)):
-              yield (tx, ty, xoff, yoff)
-              yoff += 1
-           xoff += 1
-     # http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Lon..2Flat._to_tile_numbers_2
-     def docalcx(tilex, zoom):
-        """calculate the x-coordinate in *data* space of *tile* space TILEX"""
-        return (tilex/(2**zoom)*360)-180
-     def docalcy(tiley, zoom):
-        """calculate the y-coordinate in *data* space of *tile* space TILEY"""
-        return (180/math.pi)*math.arctan(math.sinh(math.pi-
-                                                   ((y*2*math.pi)/(2**zoom))))
-     def dnw(self):
-        """return the xy coordinates, in *data* space, of the nw corner of
-  this box
+      def __init__(self, lat, lon, zoom):
+          self.__tbbox__(lat, lon, zoom)
 
-        """
-        return (docalcx(self.tnwx, self.zoom),
-                docalcy(self.tnwy, self.zoom))
-      
-     def dse(self):
-        """return the xy coordinates, in *data* space, of the se corner of
-  this box
+      def __iter__(self):
+          xoff = 0
+          for tx in map(lambda x: (x+self.tnwx)%(2**self.zoom), range(self.wit)):
+              yoff = 0
+              for ty in map(lambda y: (y+self.tnwy)%(2**self.zoom), range(self.hit)):
+                  yield (tx, ty, xoff, yoff)
+                  yoff += 1
+              xoff += 1
 
-        """
-        return (docalcx(self.tsex, self.zoom),
-                docalcy(self.tsey, self.zoom))
+       # http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Lon..2Flat._to_tile_numbers_2
+      def docalc(self, tilex, tiley):
+          """calculate the xy-coordinates in *data* space of *tile* space
+    (TILEX, TILEY)"""
+          import math
+          lon_deg = (tilex/(2**self.zoom)*360)-180
+          lat_rad = math.atan(math.sinh(math.pi-((tiley*2*math.pi)/(2**self.zoom))))
+          lat_deg = math.degrees(lat_rad)
+          return (lat_deg, lon_deg)
 
-  def tbbox(lat, lon, zoom):
-     """given (LAT, LON), a set of coordinates, and ZOOM, a [proposed] zoom
-     level, return the "bounding box" of tiles we want to fill the
-     screen.  we *also* return a (possibly) updated zoom level, in case
-     the input zoom level was so small that it wouldn't support filling
-     the whole screen
+      def dnwlatlon(self):
+          """return the lat/lon coordinates, in *data* space, of the nw corner
+    of this box
 
-     """
+          """
+          return self.docalc(self.tnwx, self.tnwy)
 
-     import math
+      def dselatlon(self):
+          """return the lat/lon coordinates, in *data* space, of the se corner of
+    this box
 
-     zoomexp = 2**zoom            # just for convenience
+          """
+          return self.docalc(self.tnwx+self.wit, self.tnwy+self.hit) # XXX
 
-     tcenterx,tcentery = deg2tilexy(lat, lon, zoom)
-     # print "deg2tilexy(lat, lon, zoom)", lat, lon, zoom, " ==> tcenterx, tcentery", tcenterx, tcentery
+      def tilexyfixup(self, xtile, ytile, zoom):
+          import math
+          n = 2**zoom
 
-     # so, tcenterx,tcentery is tile coordinates of the center of the map.  now get
-     # the height of the screen in tiles.  (in case you're wondering,
-     # sorry, but "screen with in tiles", "screen height in tiles")
-     wit = int(math.ceil((p['screenx']*1.0)/(p['tilex']*1.0)))
-     hit = int(math.ceil((p['screeny']*1.0)/(p['tiley']*1.0)))
-     wit = max(wit, 3)
-     hit = max(hit, 3)                 # enforce some minimum
-     if wit % 2 == 0:
-        wit += 1
-     if hit % 2 == 0:                 # enforce oddness, so we *have* a
-        hit += 1                      # center XXX
+          # print "tilexyfixup: called with: xtile, ytile, zoom: ", xtile, ytile, zoom
+          # deal with wrapping
+          if xtile < 0:
+              # if *x* is negative, reflect around x axis (redundantly, see below)
+              xtile %= n
 
-     if wit >= zoomexp or hit >= zoomexp:
-        # *** if we've zoomed out too far, recurse at a higher zoom level
-        return tbbox(lat, lon, zoom+1)
+          if ytile < 0 or ytile > n:
+              # first, do we need to go to the other side of the world?
+              nhalves = int(ytile/(n/2.0))  # how many halves of earth did we wrap?
+              # print "nhalves ", nhalves
+              if nhalves%2 == 0:
+                  # yes, on the other side of the world
+                  xtile += n/2
+              # if *y* out of bounds, negative, reflect around y axis, which
+              # basically means absolute value (so, the distance to the relevant
+              # pole stays the same)
+              if ytile < 0:
+                  ytile = abs(ytile)        # reflect around the N pole
+              else:
+                  ytile = n - (ytile%n)     # reflect around the S pole
 
-     # print "wit, hit: ", wit, hit
-     tnwx, tnwy = (tcenterx - ((wit-1)/2), tcentery - ((hit-1)/2))
+          # make sure we're in 1..2**zoom
+          xtile %= n
+          ytile %= n
 
-     # check to see if we are zoomed too far out, wrapped around, or some such
-     # print "(before tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
-     tnwx, tnwy = tilexyfixup(tnwx, tnwy, zoom)
-     # print "(after tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
+          xtile = int(xtile)
+          ytile = int(ytile)
 
-     return TBBox(tnwx, tnwy, wit, hit, zoom)
+          # print "tilexyfixup returning (xtile, ytile): ", xtile, ytile
+
+          return (xtile, ytile)
+
+
+      def deg2tilexy(self, lat_deg, lon_deg, zoom):
+          """give lat/lon (in decimal) and a zoom, return the tilex and tiley coordinates of the required tile"""
+          import math
+          # from http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+          lat_rad = math.radians(lat_deg)
+          n = 2.0 ** zoom
+          # print "lat_deg lat_rad lon_deg zoom: ", lat_deg, lat_rad, lon_deg, zoom
+          xtile = int(((lon_deg + 180.0) / 360.0) * n)
+          ytile = int(((1.0 - ((math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad)))) / math.pi))) * (n/2.0))
+
+          return self.tilexyfixup(xtile, ytile, zoom)
+
+      def __tbbox__(self, lat, lon, zoom):
+          """given (LAT, LON), a set of coordinates, and ZOOM, a [proposed] zoom
+          level, return the "bounding box" of tiles we want to fill the
+          screen.  we *also* return a (possibly) updated zoom level, in case
+          the input zoom level was so small that it wouldn't support filling
+          the whole screen
+
+          """
+
+          import math
+
+          zoomexp = 2**zoom            # just for convenience
+
+          tcenterx,tcentery = self.deg2tilexy(lat, lon, zoom)
+          # print "deg2tilexy(lat, lon, zoom)", lat, lon, zoom, " ==> tcenterx, tcentery", tcenterx, tcentery
+
+          # so, tcenterx,tcentery is tile coordinates of the center of the map.  now get
+          # the height of the screen in tiles.  (in case you're wondering,
+          # sorry "[screen] width in tiles", "[screen] height in tiles")
+          wit = int(math.ceil((p['screenx']*1.0)/(p['tilex']*1.0)))
+          hit = int(math.ceil((p['screeny']*1.0)/(p['tiley']*1.0)))
+          wit = max(wit, 3)
+          hit = max(hit, 3)                 # enforce some minimum
+          if wit % 2 == 0:
+             wit += 1
+          if hit % 2 == 0:                 # enforce oddness, so we *have* a
+             hit += 1                      # center XXX
+
+          if wit >= zoomexp or hit >= zoomexp:
+             # *** if we've zoomed out too far, recurse at a higher zoom level
+             return self.__tbbox__(lat, lon, zoom+1)
+
+          # print "wit, hit: ", wit, hit
+          tnwx, tnwy = (tcenterx - ((wit-1)/2), tcentery - ((hit-1)/2))
+
+          # check to see if we are zoomed too far out, wrapped around, or some such
+          # print "(before tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
+          tnwx, tnwy = self.tilexyfixup(tnwx, tnwy, zoom)
+          # print "(after tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
+
+          self.tnwx = tnwx
+          self.tnwy = tnwy
+          self.wit = wit
+          self.hit = hit
+          self.zoom = zoom
 #+END_SRC
 
 
@@ -1904,7 +1900,7 @@ request.
         p[i[0]] = i[1]
 
      # get bounding box and zoom
-     tbox = tbbox(lat, lon, zoom)
+     tbox = TBBox(lat, lon, zoom)
      # print "tbbox tnwx, tnwy, wit, hit, zoom: ", tbox.tnwx, tbox.tnwy, tbox.wit, tbox.hit, tbox.zoom
 
      # PIL's Image.paste() seems to be what we want for laying out our
@@ -1934,7 +1930,7 @@ request.
         # now, paste this in the right place on the big image
         im.paste(im2, box=(xoff*p['tilex'], yoff*p['tiley']))
 
-     return (im, tbbox.nw(), tbbox.se()
+     return (im, tbox.dnwlatlon(), tbox.dselatlon())
 #+END_SRC
 
 #+RESULTS: getpngs
@@ -1945,7 +1941,7 @@ request.
 
 #+BEGIN_SRC python :results output verbatim :var parms=parameters
   <<tbbox>>
-  <<deg2tilexy>>
+
   p = {}
   for i in parms:
      p[i[0]] = i[1]
@@ -2143,4 +2139,6 @@ here, we try to get a PNG file, put it in the background, with the
       import sys
       main(sys.argv)
 #+END_SRC
+
+#+RESULTS: ppShPolyMap
 
