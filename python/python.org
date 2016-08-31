@@ -976,6 +976,7 @@ this just consists of various general purpose routines i want to use
 in other applications.
 
 #+BEGIN_SRC python :tangle ~/usr/lib/python/ggmlib.py
+  <<GpShape>>
   <<eprint>>
   <<shPolyJson>>
   <<shPolyShape>>
@@ -1465,21 +1466,6 @@ okay, gnuplot info file (commands:plot:binary:keywords) talks about
           if self.maxy == None or self.maxy < cmaxy:
               self.maxy = cmaxy
 
-      def __rewrite__(self, pairs, btw, inter):
-          """from a sequence of PAIRS, pull them out and separate them with
-      BTW, and the separate successive pairs with INTER."""
-          def doit(x,y):
-              """reduce routine.  need to distinguish first from successive calls.
-              """
-              if type(x) == tuple:
-                  return "{0}{1}{2}{3}{4}{5}{6}".format(x[0], btw, x[1],
-                                                        inter, y[0], btw, y[1])
-              elif type(x) == str:
-                  return "{0}{1}{2}{3}{4}".format(x, inter, y[0], btw, y[1])
-              else:
-                  raise TypeError("internal error: type s/b tuple or str")
-          return reduce(doit, pairs)
-
       def __add__(self, shape, defs):
           """do the work to actually add shapely SHAPE geometries to the plot"""
 
@@ -1494,7 +1480,9 @@ okay, gnuplot info file (commands:plot:binary:keywords) talks about
           elif shape.type == 'Polygon': # gp.GP.write(self, ...):
               self.__minmax__(shape.exterior.coords)
               # XXX defaults here...
-              ignore = self.ax.plot(shape.exterior.coords, **defs)
+              ignore = self.ax.plot(
+                  map(lambda x: x[0], shape.exterior.coords),
+                  map(lambda y: y[1], shape.exterior.coords), **defs)
           else:
               # http://stackoverflow.com/a/24065533/1527747
               raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
@@ -2077,34 +2065,43 @@ algorithms, etc., which gives this formula
 here, we try to get a PNG file, put it in the background, with the
 [[http://stackoverflow.com/a/32652903/1527747][right coordinates]], and then overlay our feature over it.
 
-#+BEGIN_SRC python 
+#+name: ppShPoly
+#+BEGIN_SRC python :session py  :tangle ppshpoly :results none :shebang "#!/usr/bin/env python"
+  import os
+
   <<extractshape>>
-  <<getmapimage>>
-  <<shPoly>>
+  <<PpShape>>
 
   def main(argv):
+      import os, sys
+      import argparse
+
       cmd = argv[0]
       parser = argparse.ArgumentParser(description="""display a geometry over a map.
-      `./showit -l Soberanes -f "Heat Perimeter" ~/work/gis/play/IR/20160729_Soberanes_IR/doc.kml\'""")
+      `{0} -l Soberanes -f "Heat Perimeter" ~/work/gis/play/IR/20160729_Soberanes_IR/doc.kml\'""".format(cmd))
       parser.add_argument('-l', '--layername', type=str, required=True,
                           help="name of desired layer (in file)")
       parser.add_argument('-f', '--featurename', type=str, required=True,
                           help="name of desired feature (within layer)")
       # use "type=str" since we use the file name for ogr.Open()
-      parser.add_argument('ifile', type=str, help="file to process")
+      parser.add_argument('filename', type=str, nargs=1)
       args = parser.parse_args();
 
-      # make sure ifile is readable
-      if not os.access(args.ifile, os.R_OK):
-          eprint("input file '%s' cannot be read" % args.ifile)
-          sys.exit(2)
-
       # get shape from extractshape()
-      # get centroid from shape
-      # get image from getmapimage
-      # call shPoly on the shape
-#+END_SRC
+      shape = extractshape(args.filename[0], args.layername, args.featurename)
 
-#+RESULTS:
-: None
+      # get centroid from shape
+      centroid = shape.centroid()
+
+      # get image from getmapimage; returns image, plus the bbox (in lat/lon) of image
+
+      # call shPoly on the shape
+      pp = PpShape()
+      pp.add(shape)
+      pp.plot()
+
+  if __name__ == "__main__":
+      import sys
+      main(sys.argv)
+#+END_SRC
 
