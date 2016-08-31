@@ -1596,8 +1596,8 @@ http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
 
 #+name: deg2url
 #+BEGIN_SRC python :var lat=36.4 :var lon=-121.858 :var zoom=5 :var mapurl=MAPURL
-  <<tbbox>>
-  x,y = TBBox.deg2tilexy(lat, lon, zoom)
+  <<tilebbox>>
+  x,y = Tilebbox.deg2tilexy(lat, lon, zoom)
   return "{m}/{z}/{x}/{y}.png".format(m=mapurl, z=zoom, x=x, y=y)
 #+END_SRC
 
@@ -1736,11 +1736,11 @@ then, given a set of coordinates, that we want in the center of the
 screen, and a zoom level, figure out the list of tiles we need to
 request.
 
-#+name: tbbox
+#+name: tilebbox
 #+BEGIN_SRC python :results output verbatim
-  class TBBox:                    # a Tile Bounding Box
+  class TileBbox:                    # a Tile Bounding Box
       def __init__(self, lat, lon, zoom):
-          self.__tbbox__(lat, lon, zoom)
+          self.__tilebbox__(lat, lon, zoom)
 
       def __iter__(self):
           xoff = 0
@@ -1824,7 +1824,7 @@ request.
 
           return self.tilexyfixup(xtile, ytile, zoom)
 
-      def __tbbox__(self, lat, lon, zoom):
+      def __tilebbox__(self, lat, lon, zoom):
           """given (LAT, LON), a set of coordinates, and ZOOM, a [proposed] zoom
           level, return the "bounding box" of tiles we want to fill the
           screen.  we *also* return a (possibly) updated zoom level, in case
@@ -1854,7 +1854,7 @@ request.
 
           if wit >= zoomexp or hit >= zoomexp:
               # *** if we've zoomed out too far, recurse at a higher zoom level
-              self.__tbbox__(lat, lon, zoom+1)
+              self.__tilebbox__(lat, lon, zoom+1)
           else:
               # print "wit, hit: ", wit, hit
               tnwx, tnwy = (tcenterx - ((wit-1)/2), tcentery - ((hit-1)/2))
@@ -1873,13 +1873,13 @@ request.
 
 
 #+BEGIN_SRC python :results output verbatim :var lat=36 :var lon=-121 :var zoom=10 :var parms=parameters
-  <<tbbox>>
+  <<tilebbox>>
 
   p = {}
   for i in parms:
       p[i[0]] = i[1]
 
-  tbox = TBBox(lat, lon, zoom)
+  tbox = TileBbox(lat, lon, zoom)
 
   print lat, lon, zoom, tbox.dnwlatlon(), tbox.dselatlon(), tbox.tnwx, tbox.wit, tbox.tnwy, tbox.hit
 
@@ -1910,14 +1910,14 @@ request.
      import PIL.Image
      import urllib2
 
-     <<tbbox>>
+     <<tilebbox>>
      p = {}
      for i in parms:
         p[i[0]] = i[1]
 
      # get bounding box and zoom
-     tbox = TBBox(lat, lon, zoom)
-     print "tbbox tnwx, tnwy, wit, hit, zoom: ", tbox.tnwx, tbox.tnwy, tbox.wit, tbox.hit, tbox.zoom
+     tbox = TileBbox(lat, lon, zoom)
+     print "tilebbox tnwx, tnwy, wit, hit, zoom: ", tbox.tnwx, tbox.tnwy, tbox.wit, tbox.hit, tbox.zoom
 
      # PIL's Image.paste() seems to be what we want for laying out our
      # images: http://pillow.readthedocs.io/en/latest/reference/Image.html
@@ -1958,12 +1958,12 @@ request.
 #+RESULTS:
 
 #+BEGIN_SRC python :results output verbatim :var parms=parameters
-  <<tbbox>>
+  <<tilebbox>>
 
   p = {}
   for i in parms:
      p[i[0]] = i[1]
-  print tbbox(0, 90, 0)
+  print TileBbox(0, 90, 0)
 #+END_SRC
 
 #+RESULTS:
@@ -1982,7 +1982,7 @@ wit, hit:  3 3
 tilexyfixup:  2 1 2
 2 1
 2 1
-<__main__.Tbbox instance at 0x10c31ad88>
+<__main__.Tilebbox instance at 0x10c31ad88>
 #+end_example
 
 *** converting from degrees minutes seconds to decimal lat/lon
@@ -2192,7 +2192,7 @@ here, we try to get a PNG file, put it in the background, with the
       # get centroid from shape
       (lat, lon) = (shape.centroid.y, shape.centroid.x)
 
-      # get image from getmapimage; returns image, plus the tbbox (in lat/lon) of image
+      # get image from getmapimage; returns image, plus the tilebbox (in lat/lon) of image
       zoom = 0
       (image, (dnwlat, dnwlon), (dselat, dselon)) = getmapimage(lat, lon, zoom)
 
