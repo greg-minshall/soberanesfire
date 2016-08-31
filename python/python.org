@@ -55,7 +55,7 @@ print c
 
 #+name: shPolyJson
 #+BEGIN_SRC python
-  def shPolyJson(ijson):
+  def shPolyJson(ijson, imgfile=None, imgextent=None):
       """plot the *exterior*** of a geojson polygon (using matplotlib)"""
 
       # from https://github.com/matplotlib/matplotlib/issues/5836
@@ -100,12 +100,15 @@ print c
           # http://stackoverflow.com/a/24065533/1527747
           raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(ijson['type']))
 
+      if imgfile:
+          # http://stackoverflow.com/q/32652428/1527747
+          implot = subplot1.imshow(pyplot.imread(r'test.png'), interpolation='nearest',                          alpha=1.0, extent=imgextent)
 
       ignore = ax.set_title('Polygon')
       pyplot.show()
 #+END_SRC
 
-#+name: shPolyShape
+#+name: gpShPolyShape
 #+BEGIN_SRC python
   <<GpShape>>
   def shPolyShape(shape, device=None):
@@ -117,8 +120,8 @@ print c
 
 #+END_SRC
 
-#+name: shPoly
-#+BEGIN_SRC python :session py  :tangle shpoly :results none :shebang "#!/usr/bin/env python"
+#+name: gpShPoly
+#+BEGIN_SRC python :session py  :tangle gpshpoly :results none :shebang "#!/usr/bin/env python"
   import os
 
   <<extractshape>>
@@ -150,6 +153,44 @@ print c
 
       gp.add(shape)
       gp.plot()
+
+  # file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
+  # layer = "Soberanes"
+  # feature = "Heat Perimeter"
+  # shPoly(file, layer, feature)
+
+  if __name__ == "__main__":
+      import sys
+      main(sys.argv)
+#+END_SRC
+
+#+name: ppShPoly
+#+BEGIN_SRC python :session py  :tangle ppshpoly :results none :shebang "#!/usr/bin/env python"
+  import os
+
+  <<extractshape>>
+  <<PpShape>>
+
+  def main(argv):
+      import os, sys
+      import argparse
+
+      cmd = argv[0]
+      parser = argparse.ArgumentParser(description=
+                                       "plot a feature of a layer from an ogr-readable file")
+      parser.add_argument('-l', '--layername', type=str, required=True,
+                          help="name of desired layer (in file)")
+      parser.add_argument('-f', '--featurename', type=str, required=True,
+                          help="name of desired feature (within layer)")
+      # use "type=str" since we use the file name for ogr.Open()
+      parser.add_argument('filename', type=str, nargs=1)
+      args = parser.parse_args();
+
+      pp = PpShape()
+      shape = extractshape(args.filename[0], args.layername, args.featurename)
+
+      pp.add(shape)
+      pp.plot()
 
   # file = "/Users/minshall/work/gis/play/IR/20160724_Soberanes_IR/doc.kml"
   # layer = "Soberanes"
@@ -1303,6 +1344,187 @@ ah, [[http://gnuplot-surprising.blogspot.de/2011/09/gnuplot-background-image.htm
 okay, gnuplot info file (commands:plot:binary:keywords) talks about
 "dx dy dz" and "origin", which may help with coordinates.
 
+*** PyPlot == ShPyPlot, plot shapely shape
+
+#+name: PpShape
+#+BEGIN_SRC python
+  from matplotlib import pyplot
+
+  class PpShape:
+      """plotting Shapely objects using pyplot."""
+
+      def __init__(self):
+          self.reset()
+          self.__setdefaults__()
+
+      def reset(self):
+          self.fig = pyplot.figure(1, figsize=(5,5), dpi=90)
+          # for '111': http://stackoverflow.com/a/6981055/1527747
+          # for 'aspect=1.0': http://stackoverflow.com/q/7965743/1527747
+          self.ax = self.fig.add_subplot(111, aspect=1.0)
+          self.minx = self.maxx = self.miny = self.maxy = None
+
+      def __setdefaults__(self):
+          defs = {
+              # 'fillstyle': "empty",
+              # 'fillcolor': "rgb 0x000000",
+              # 'transparency': 1.0,
+              # 'density': 1.0,
+              # 'border': "off",
+              # 'linecolor': "rgb 0x000000",
+              # 'linewidth': 1,
+              # 'legend': "off",
+          }
+          self.__defaults__ = defs;
+
+      def setdefaults(self, **kwargs):
+          """set one or more defaults for plotting; complex defaults should be
+          specified as a single string (e.g., linecolor="rgbcolor
+          0x000000").
+
+          so, plan is to have defaults from "compile" time, the ability
+          to change the defaults (for subsequent calls this session),
+          and the ability to specify a different value on each
+          invocation of add)
+
+          """
+
+          for (k,v) in kwargs.items():
+              try:
+                  type = self.defaults[k]
+              except:
+                  raise NameError("setdefaults: no default {0}".format(k))
+              if type(v) != type(self.__defaults__[k]):
+                  raise TypeError("key should be of type {0}, but {1} (of type {2}) passed".format(
+                      type(self.__defaults__[k], v, type(v))))
+              self.__defaults__[k] = v
+
+      def getdefaults(self, *args):
+          if (len(args)) == 0:
+              return self.__defaults__
+          else:
+              results = {}
+              for k in args.items():
+                  try:
+                      results.add(self.__defaults__[k])
+                  except:
+                      raise NameError("getdefaults: no default {0}".format(k))
+              return results
+
+      def __stylespec__(self, prefix, defs):
+          """from defaults and options passed on call, put together a valid
+  style spec
+
+          """
+
+          def ifel(k,v):
+              if v == "":
+                  return ""
+              else:
+                  return " {k} {v}".format(k=k,v=v)
+
+          # now we have a complete list of options, turn them into a
+          # style list.
+          results = prefix        # first part of command line
+          # ternary operator: http://stackoverflow.com/a/394814/1527747
+
+          # fillstyle
+          if defs['fillstyle'] in [None, "empty"]:
+              results += " fillstyle empty"
+          else:
+              results += " fillstyle"
+              if defs['transparency'] != 1:
+                  # so, <density> is used to encode the transparency.
+                  results += " transparent {f} {d}".format(f=defs['fillstyle'],
+                                                           d=defs['transparency'])
+              else:
+                  results += " {f} {d}".format(f=defs['fillstyle'],
+                                               d=defs['density'])
+                  results += ifel('fillcolor', defs['fillcolor'])
+
+          # linestyle (only if a border)
+          if {defs['linecolor'], defs['linewidth']} != set([""]):
+              # something isn't blank
+              results += "\n{0} fillstyle".format(prefix)
+              results += " border"
+              results += ifel('linecolor', defs['linecolor'])
+              results += ifel('linewidth', defs['linewidth'])
+          return results
+
+
+      def __minmax__(self, coords):
+          """keep our minimums and maximums up to date"""
+          # http://stackoverflow.com/a/26310202/1527747
+          cminx = min([pair[0] for pair in coords])
+          cminy = min([pair[1] for pair in coords])
+          cmaxx = max([pair[0] for pair in coords])
+          cmaxy = max([pair[1] for pair in coords])
+          if self.minx == None or self.minx > cminx:
+              self.minx = cminx
+          if self.miny == None or self.miny > cminy:
+              self.miny = cminy
+          if self.maxx == None or self.maxx < cmaxx:
+              self.maxx = cmaxx
+          if self.maxy == None or self.maxy < cmaxy:
+              self.maxy = cmaxy
+
+      def __rewrite__(self, pairs, btw, inter):
+          """from a sequence of PAIRS, pull them out and separate them with
+      BTW, and the separate successive pairs with INTER."""
+          def doit(x,y):
+              """reduce routine.  need to distinguish first from successive calls.
+              """
+              if type(x) == tuple:
+                  return "{0}{1}{2}{3}{4}{5}{6}".format(x[0], btw, x[1],
+                                                        inter, y[0], btw, y[1])
+              elif type(x) == str:
+                  return "{0}{1}{2}{3}{4}".format(x, inter, y[0], btw, y[1])
+              else:
+                  raise TypeError("internal error: type s/b tuple or str")
+          return reduce(doit, pairs)
+
+      def __add__(self, shape, defs):
+          """do the work to actually add shapely SHAPE geometries to the plot"""
+
+          if shape.type in ['MultiPoint', 'MultiLine', 
+                            'MultiPolygon', 'GeometryCollection']:
+              for geom in shape.geoms:
+                  self.__add__(geom, defs)  # recurse for each sub-geometry
+          #elif shape.type == 'Point':   XXX
+          #    pass
+          #elif shape.type == 'Line':
+          #    pass
+          elif shape.type == 'Polygon': # gp.GP.write(self, ...):
+              self.__minmax__(shape.exterior.coords)
+              # XXX defaults here...
+              ignore = self.ax.plot(shape.exterior.coords, color='#000000', alpha=0.7,
+                                     linewidth=1, solid_capstyle='round', zorder=2)
+          else:
+              # http://stackoverflow.com/a/24065533/1527747
+              raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
+
+      def __mergedefaults__(self, **kwargs):
+          defs = self.__defaults__
+          for (k,v) in kwargs.items():
+              try:
+                  defs[k] = v
+              except:
+                  raise NameError("unknown option {0}; use getdefaults() for list".format(k))
+          return defs
+
+      def add(self, shape, **kwargs):
+          """plot the shapely SHAPE object"""
+          defs = self.__mergedefaults__(**kwargs)
+          self.__add__(shape, defs)
+
+      def plot(self, **kwargs):
+          defs = self.__mergedefaults__(**kwargs)
+
+          ignore = self.ax.set_title('Polygon')
+          pyplot.show()
+#+END_SRC
+
+
 ** maps?
 
 how do we get our polygon positioned over a map (in the background).
@@ -1698,7 +1920,7 @@ request.
 
 #+RESULTS: getpngs
 
-#+call: getpngs(zoom=0, lat=66, lon=0)
+#+call: getpngs(zoom=13)
 
 #+RESULTS:
 
@@ -1816,6 +2038,9 @@ algorithms, etc., which gives this formula
 (of course, *i* have coordinates in lat/lon, *not* meters.  still...)
 
 *** misc
+
+**** TilePoint -- an experiment in progress
+
 #+BEGIN_SRC python
   class TilePoint:
       """implements arithmetic for tiles that wrap around.  for latitude,
@@ -1850,4 +2075,40 @@ algorithms, etc., which gives this formula
 
 #+RESULTS:
 | 2 | 3 | 3 |
+
+** putting it all together?
+
+here, we try to get a PNG file, put it in the background, with the
+[[http://stackoverflow.com/a/32652903/1527747][right coordinates]], and then overlay our feature over it.
+
+#+BEGIN_SRC python 
+  <<extractshape>>
+  <<getmapimage>>
+  <<shPoly>>
+
+  def main(argv):
+      cmd = argv[0]
+      parser = argparse.ArgumentParser(description="""display a geometry over a map.
+      `./showit -l Soberanes -f "Heat Perimeter" ~/work/gis/play/IR/20160729_Soberanes_IR/doc.kml\'""")
+      parser.add_argument('-l', '--layername', type=str, required=True,
+                          help="name of desired layer (in file)")
+      parser.add_argument('-f', '--featurename', type=str, required=True,
+                          help="name of desired feature (within layer)")
+      # use "type=str" since we use the file name for ogr.Open()
+      parser.add_argument('ifile', type=str, help="file to process")
+      args = parser.parse_args();
+
+      # make sure ifile is readable
+      if not os.access(args.ifile, os.R_OK):
+          eprint("input file '%s' cannot be read" % args.ifile)
+          sys.exit(2)
+
+      # get shape from extractshape()
+      # get centroid from shape
+      # get image from getmapimage
+      # call shPoly on the shape
+#+END_SRC
+
+#+RESULTS:
+: None
 
