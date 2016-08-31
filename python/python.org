@@ -1366,14 +1366,11 @@ okay, gnuplot info file (commands:plot:binary:keywords) talks about
 
       def __setdefaults__(self):
           defs = {
-              # 'fillstyle': "empty",
-              # 'fillcolor': "rgb 0x000000",
-              # 'transparency': 1.0,
-              # 'density': 1.0,
-              # 'border': "off",
-              # 'linecolor': "rgb 0x000000",
-              # 'linewidth': 1,
-              # 'legend': "off",
+              'color': '#000000',
+              'alpha': 0.7,
+              'linewidth': 1,
+              'solid_capstyle': 'round',
+              'zorder': 2,
           }
           self.__defaults__ = defs;
 
@@ -1497,8 +1494,7 @@ okay, gnuplot info file (commands:plot:binary:keywords) talks about
           elif shape.type == 'Polygon': # gp.GP.write(self, ...):
               self.__minmax__(shape.exterior.coords)
               # XXX defaults here...
-              ignore = self.ax.plot(shape.exterior.coords, color='#000000', alpha=0.7,
-                                     linewidth=1, solid_capstyle='round', zorder=2)
+              ignore = self.ax.plot(shape.exterior.coords, **defs)
           else:
               # http://stackoverflow.com/a/24065533/1527747
               raise TypeError("type is '{0}', but we only support 'MultiPolygon' and 'Polygon'".format(shape.type))
