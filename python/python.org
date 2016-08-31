@@ -2127,12 +2127,14 @@ here, we try to get a PNG file, put it in the background, with the
 
       # get image from getmapimage; returns image, plus the tbbox (in lat/lon) of image
       zoom = 0
-      (image, nwx, nwy) = getmapimage(lat, lon, zoom)
+      (image, (dnwlat, dnwlon), (dselat, dselon)) = getmapimage(lat, lon, zoom)
 
       # call shPoly on the shape
       pp = PpShape()
       pp.add(shape)
-      pp.addimage(image)
+      # problem: lat == y, lon == x, yet we're used to saying "lat/lon",
+      # as well as to saying "x, y"
+      pp.addimage(image, extent=[dnwlon, dnwlat, dselon, dselat])
       pp.plot()
 
   if __name__ == "__main__":
