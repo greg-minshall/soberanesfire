@@ -1638,7 +1638,7 @@ http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
   # from http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
     lat_rad = math.radians(lat_deg)
     n = 2.0 ** zoom
-    print "lat_deg lat_rad lon_deg zoom: ", lat_deg, lat_rad, lon_deg, zoom
+    # print "lat_deg lat_rad lon_deg zoom: ", lat_deg, lat_rad, lon_deg, zoom
     xtile = int(((lon_deg + 180.0) / 360.0) * n)
     ytile = int(((1.0 - ((math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad)))) / math.pi))) * (n/2.0))
 
@@ -1788,11 +1788,12 @@ then, given a set of coordinates, that we want in the center of the
 screen, and a zoom level, figure out the list of tiles we need to
 request.
 
-#+name: bbox
+#+name: tbbox
 #+BEGIN_SRC python :results output verbatim
   <<deg2tilexy>>
 
-  class BBox:
+  class TBBox:                    # a Tile Bounding Box
+     import zoom
      def __init__(self, tnwx, tnwy, wit, hit, zoom):
         self.tnwx = tnwx
         self.tnwy = tnwy
@@ -1807,8 +1808,31 @@ request.
               yield (tx, ty, xoff, yoff)
               yoff += 1
            xoff += 1
+     # http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Lon..2Flat._to_tile_numbers_2
+     def docalcx(tilex, zoom):
+        """calculate the x-coordinate in *data* space of *tile* space TILEX"""
+        return (tilex/(2**zoom)*360)-180
+     def docalcy(tiley, zoom):
+        """calculate the y-coordinate in *data* space of *tile* space TILEY"""
+        return (180/math.pi)*math.arctan(math.sinh(math.pi-
+                                                   ((y*2*math.pi)/(2**zoom))))
+     def dnw(self):
+        """return the xy coordinates, in *data* space, of the nw corner of
+  this box
 
-  def bbox(lat, lon, zoom):
+        """
+        return (docalcx(self.tnwx, self.zoom),
+                docalcy(self.tnwy, self.zoom))
+      
+     def dse(self):
+        """return the xy coordinates, in *data* space, of the se corner of
+  this box
+
+        """
+        return (docalcx(self.tsex, self.zoom),
+                docalcy(self.tsey, self.zoom))
+
+  def tbbox(lat, lon, zoom):
      """given (LAT, LON), a set of coordinates, and ZOOM, a [proposed] zoom
      level, return the "bounding box" of tiles we want to fill the
      screen.  we *also* return a (possibly) updated zoom level, in case
@@ -1838,7 +1862,7 @@ request.
 
      if wit >= zoomexp or hit >= zoomexp:
         # *** if we've zoomed out too far, recurse at a higher zoom level
-        return bbox(lat, lon, zoom+1)
+        return tbbox(lat, lon, zoom+1)
 
      # print "wit, hit: ", wit, hit
      tnwx, tnwy = (tcenterx - ((wit-1)/2), tcentery - ((hit-1)/2))
@@ -1848,7 +1872,7 @@ request.
      tnwx, tnwy = tilexyfixup(tnwx, tnwy, zoom)
      # print "(after tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
 
-     return BBox(tnwx, tnwy, wit, hit, zoom)
+     return TBBox(tnwx, tnwy, wit, hit, zoom)
 #+END_SRC
 
 
@@ -1865,35 +1889,40 @@ request.
 #+name: getmapimage
 #+BEGIN_SRC python :results output verbatim :var lat=36.4 :var lon=-121.858 :var zoom=5 :var parms=parameters :var mapurl=MAPURL
   def getmapimage(lat, lon, zoom):
+     """return a map that more-or-less centers LAT/LON at a particular ZOOM
+  level.  also returns the bounding box (nw, se coordinates) of the
+  image.
+
+     """
      import io
      import PIL.Image
      import urllib2
 
-     <<bbox>>
+     <<tbbox>>
      p = {}
      for i in parms:
         p[i[0]] = i[1]
 
      # get bounding box and zoom
-     box = bbox(lat, lon, zoom)
-     # print "bbox tnwx, tnwy, wit, hit, zoom: ", box.tnwx, box.tnwy, box.wit, box.hit, box.zoom
+     tbox = tbbox(lat, lon, zoom)
+     # print "tbbox tnwx, tnwy, wit, hit, zoom: ", tbox.tnwx, tbox.tnwy, tbox.wit, tbox.hit, tbox.zoom
 
      # PIL's Image.paste() seems to be what we want for laying out our
      # images: http://pillow.readthedocs.io/en/latest/reference/Image.html
      # (maybe starting by creating an image with Image.new()?)
 
-     iwp = p['tilex']*box.wit
-     ihp = p['tiley']*box.hit
+     iwp = p['tilex']*tbox.wit
+     ihp = p['tiley']*tbox.hit
 
      im = PIL.Image.new("RGB", (iwp, ihp))
 
      # now, run through the list of tiles.  for each tile, download it,
      # then paste it into the right place in the image.
 
-     for tx, ty, xoff, yoff in box:
+     for tx, ty, xoff, yoff in tbox:
         # print "iter tx, ty, xoff, yoff: ", tx, ty, xoff, yoff
         # http://stackoverflow.com/a/22682/1527747
-        url = "{u}/{z}/{x}/{y}.png".format(u=mapurl, z=box.zoom, x=tx, y=ty)
+        url = "{u}/{z}/{x}/{y}.png".format(u=mapurl, z=tbox.zoom, x=tx, y=ty)
         response = urllib2.urlopen(url)
         data = response.read()
         # [[http://pillow.readthedocs.io/en/latest/reference/Image.html][PIL.Image.frombytes()
@@ -1904,7 +1933,8 @@ request.
         im2 = PIL.Image.open(bio)
         # now, paste this in the right place on the big image
         im.paste(im2, box=(xoff*p['tilex'], yoff*p['tiley']))
-     return im
+
+     return (im, tbbox.nw(), tbbox.se()
 #+END_SRC
 
 #+RESULTS: getpngs
@@ -1914,12 +1944,12 @@ request.
 #+RESULTS:
 
 #+BEGIN_SRC python :results output verbatim :var parms=parameters
-  <<bbox>>
+  <<tbbox>>
   <<deg2tilexy>>
   p = {}
   for i in parms:
      p[i[0]] = i[1]
-  print bbox(0, 90, 0)
+  print tbbox(0, 90, 0)
 #+END_SRC
 
 #+RESULTS:
@@ -1938,7 +1968,7 @@ wit, hit:  3 3
 tilexyfixup:  2 1 2
 2 1
 2 1
-<__main__.BBox instance at 0x10c31ad88>
+<__main__.Tbbox instance at 0x10c31ad88>
 #+end_example
 
 *** converting from degrees minutes seconds to decimal lat/lon
@@ -2099,9 +2129,9 @@ here, we try to get a PNG file, put it in the background, with the
       # get centroid from shape
       (lat, lon) = (shape.centroid.y, shape.centroid.x)
 
-      # get image from getmapimage; returns image, plus the bbox (in lat/lon) of image
+      # get image from getmapimage; returns image, plus the tbbox (in lat/lon) of image
       zoom = 0
-      image = getmapimage(lat, lon, zoom)
+      (image, nwx, nwy) = getmapimage(lat, lon, zoom)
 
       # call shPoly on the shape
       pp = PpShape()
