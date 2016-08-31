@@ -1391,7 +1391,7 @@ http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
   def tilexyfixup(xtile, ytile, zoom):
     n = 2**zoom
 
-    print "tilexyfixup: called with: xtile, ytile, zoom: ", xtile, ytile, zoom
+    # print "tilexyfixup: called with: xtile, ytile, zoom: ", xtile, ytile, zoom
     # deal with wrapping
     if xtile < 0:
       # if *x* is negative, reflect around x axis (redundantly, see below)
@@ -1400,7 +1400,7 @@ http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
     if ytile < 0 or ytile > n:
       # first, do we need to go to the other side of the world?
       nhalves = int(ytile/(n/2.0))  # how many halves of earth did we wrap?
-      print "nhalves ", nhalves
+      # print "nhalves ", nhalves
       if nhalves%2 == 0:
         # yes, on the other side of the world
         xtile += n/2
@@ -1419,7 +1419,7 @@ http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
     xtile = int(xtile)
     ytile = int(ytile)
 
-    print "tilexyfixup returning (xtile, ytile): ", xtile, ytile
+    # print "tilexyfixup returning (xtile, ytile): ", xtile, ytile
 
     return (xtile, ytile)
 
@@ -1622,7 +1622,7 @@ request.
      zoomexp = 2**zoom            # just for convenience
 
      tcenterx,tcentery = deg2tilexy(lat, lon, zoom)
-     print "deg2tilexy(lat, lon, zoom)", lat, lon, zoom, " ==> tcenterx, tcentery", tcenterx, tcentery
+     # print "deg2tilexy(lat, lon, zoom)", lat, lon, zoom, " ==> tcenterx, tcentery", tcenterx, tcentery
 
      # so, tcenterx,tcentery is tile coordinates of the center of the map.  now get
      # the height of the screen in tiles.  (in case you're wondering,
@@ -1640,13 +1640,13 @@ request.
         # *** if we've zoomed out too far, recurse at a higher zoom level
         return bbox(lat, lon, zoom+1)
 
-     print "wit, hit: ", wit, hit
+     # print "wit, hit: ", wit, hit
      tnwx, tnwy = (tcenterx - ((wit-1)/2), tcentery - ((hit-1)/2))
 
      # check to see if we are zoomed too far out, wrapped around, or some such
-     print "(before tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
+     # print "(before tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
      tnwx, tnwy = tilexyfixup(tnwx, tnwy, zoom)
-     print "(after tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
+     # print "(after tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
 
      return BBox(tnwx, tnwy, wit, hit, zoom)
 #+END_SRC
@@ -1664,7 +1664,7 @@ request.
 
   # get bounding box and zoom
   box = bbox(lat, lon, zoom)
-  print "bbox tnwx, tnwy, wit, hit, zoom: ", box.tnwx, box.tnwy, box.wit, box.hit, box.zoom
+  # print "bbox tnwx, tnwy, wit, hit, zoom: ", box.tnwx, box.tnwy, box.wit, box.hit, box.zoom
 
   # PIL's Image.paste() seems to be what we want for laying out our
   # images: http://pillow.readthedocs.io/en/latest/reference/Image.html
@@ -1679,7 +1679,7 @@ request.
   # then paste it into the right place in the image.
 
   for tx, ty, xoff, yoff in box:
-     print "iter tx, ty, xoff, yoff: ", tx, ty, xoff, yoff
+     # print "iter tx, ty, xoff, yoff: ", tx, ty, xoff, yoff
      # http://stackoverflow.com/a/22682/1527747
      url = "{u}/{z}/{x}/{y}.png".format(u=mapurl, z=box.zoom, x=tx, y=ty)
      response = urllib2.urlopen(url)
@@ -1697,92 +1697,10 @@ request.
 #+END_SRC
 
 #+RESULTS: getpngs
-#+begin_example
-tilexyfixup: called with: xtile, ytile, zoom:  5 12 5
-tilexyfixup returning (xtile, ytile):  5 12
-deg2tilexy(lat, lon, zoom) 36.4 -121.858 5  ==> tcenterx, tcentery 5 12
-wit, hit:  5 5
-(before tilexyfixup) tnwx, tnwy:  3 10
-tilexyfixup: called with: xtile, ytile, zoom:  3 10 5
-tilexyfixup returning (xtile, ytile):  3 10
-(after tilexyfixup) tnwx, tnwy:  3 10
-bbox tnwx, tnwy, wit, hit, zoom:  3 10 5 5 5
-iter tx, ty, xoff, yoff:  3 10 0 0
-iter tx, ty, xoff, yoff:  3 11 0 1
-iter tx, ty, xoff, yoff:  3 12 0 2
-iter tx, ty, xoff, yoff:  3 13 0 3
-iter tx, ty, xoff, yoff:  3 14 0 4
-iter tx, ty, xoff, yoff:  4 10 1 0
-iter tx, ty, xoff, yoff:  4 11 1 1
-iter tx, ty, xoff, yoff:  4 12 1 2
-iter tx, ty, xoff, yoff:  4 13 1 3
-iter tx, ty, xoff, yoff:  4 14 1 4
-iter tx, ty, xoff, yoff:  5 10 2 0
-iter tx, ty, xoff, yoff:  5 11 2 1
-iter tx, ty, xoff, yoff:  5 12 2 2
-iter tx, ty, xoff, yoff:  5 13 2 3
-iter tx, ty, xoff, yoff:  5 14 2 4
-iter tx, ty, xoff, yoff:  6 10 3 0
-iter tx, ty, xoff, yoff:  6 11 3 1
-iter tx, ty, xoff, yoff:  6 12 3 2
-iter tx, ty, xoff, yoff:  6 13 3 3
-iter tx, ty, xoff, yoff:  6 14 3 4
-iter tx, ty, xoff, yoff:  7 10 4 0
-iter tx, ty, xoff, yoff:  7 11 4 1
-iter tx, ty, xoff, yoff:  7 12 4 2
-iter tx, ty, xoff, yoff:  7 13 4 3
-iter tx, ty, xoff, yoff:  7 14 4 4
-#+end_example
 
-#+call: getpngs(zoom=0, lat=85, lon=0)
+#+call: getpngs(zoom=0, lat=66, lon=0)
 
 #+RESULTS:
-#+begin_example
-tilexyfixup: called with: xtile, ytile, zoom:  0 0 0
-tilexyfixup returning (xtile, ytile):  0 0
-deg2tilexy(lat, lon, zoom) 85 0 0  ==> tcenterx, tcentery 0 0
-tilexyfixup: called with: xtile, ytile, zoom:  1 0 1
-tilexyfixup returning (xtile, ytile):  1 0
-deg2tilexy(lat, lon, zoom) 85 0 1  ==> tcenterx, tcentery 1 0
-tilexyfixup: called with: xtile, ytile, zoom:  2 0 2
-tilexyfixup returning (xtile, ytile):  2 0
-deg2tilexy(lat, lon, zoom) 85 0 2  ==> tcenterx, tcentery 2 0
-tilexyfixup: called with: xtile, ytile, zoom:  4 0 3
-tilexyfixup returning (xtile, ytile):  4 0
-deg2tilexy(lat, lon, zoom) 85 0 3  ==> tcenterx, tcentery 4 0
-wit, hit:  5 5
-(before tilexyfixup) tnwx, tnwy:  2 -2
-tilexyfixup: called with: xtile, ytile, zoom:  2 -2 3
-nhalves  0
-tilexyfixup returning (xtile, ytile):  6 2
-(after tilexyfixup) tnwx, tnwy:  6 2
-bbox tnwx, tnwy, wit, hit, zoom:  6 2 5 5 3
-iter tx, ty, xoff, yoff:  6 2 0 0
-iter tx, ty, xoff, yoff:  6 3 0 1
-iter tx, ty, xoff, yoff:  6 4 0 2
-iter tx, ty, xoff, yoff:  6 5 0 3
-iter tx, ty, xoff, yoff:  6 6 0 4
-iter tx, ty, xoff, yoff:  7 2 1 0
-iter tx, ty, xoff, yoff:  7 3 1 1
-iter tx, ty, xoff, yoff:  7 4 1 2
-iter tx, ty, xoff, yoff:  7 5 1 3
-iter tx, ty, xoff, yoff:  7 6 1 4
-iter tx, ty, xoff, yoff:  0 2 2 0
-iter tx, ty, xoff, yoff:  0 3 2 1
-iter tx, ty, xoff, yoff:  0 4 2 2
-iter tx, ty, xoff, yoff:  0 5 2 3
-iter tx, ty, xoff, yoff:  0 6 2 4
-iter tx, ty, xoff, yoff:  1 2 3 0
-iter tx, ty, xoff, yoff:  1 3 3 1
-iter tx, ty, xoff, yoff:  1 4 3 2
-iter tx, ty, xoff, yoff:  1 5 3 3
-iter tx, ty, xoff, yoff:  1 6 3 4
-iter tx, ty, xoff, yoff:  2 2 4 0
-iter tx, ty, xoff, yoff:  2 3 4 1
-iter tx, ty, xoff, yoff:  2 4 4 2
-iter tx, ty, xoff, yoff:  2 5 4 3
-iter tx, ty, xoff, yoff:  2 6 4 4
-#+end_example
 
 #+BEGIN_SRC python :results output verbatim :var parms=parameters
   <<bbox>>
@@ -1896,3 +1814,40 @@ algorithms, etc., which gives this formula
 : resolution = 156543.03 meters/pixel * cos(latitude) / (2 ^ zoomlevel)
 
 (of course, *i* have coordinates in lat/lon, *not* meters.  still...)
+
+*** misc
+#+BEGIN_SRC python
+  class TilePoint:
+      """implements arithmetic for tiles that wrap around.  for latitude,
+  this is just basically modulo (2**zoom) arithmetic.  trickier is for
+  longitude.  for example, with zoom 3 (2**3 = 8) if you are at
+  longitude 0, and want to go "up" one tile (by subtracting by (0,1),
+  say), you should *not* end up at (0, 7), *nor* should you end up at
+  (4,7).  rather, you should end up at (4,0).  but, *then*, on the next
+  subtraction by (0,1), you should end up at (4,7).  possibly it's not
+  possible.
+
+      """
+      def __init__(self, x, y, zoom):
+          self.x = x
+          self.y = y
+          self.zoom = zoom
+          self.powzoom = 2**zoom  # for efficiency
+      def __add__(self, i,j):
+          self.x += i
+          self.x %= self.powzoom
+          self.y += j
+          self.y %= self.powzoom
+      def __sub__(self, i,j):
+          self.__add__(-i, -j)
+      def __str__(self):
+          return "({0}, {1}, {2})".format(self.x, self.y, self.zoom)
+
+  one = TilePoint(0, 0, 3)
+  one.__add__(2,3)
+  return one
+#+END_SRC
+
+#+RESULTS:
+| 2 | 3 | 3 |
+
