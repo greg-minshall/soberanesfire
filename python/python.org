@@ -1641,9 +1641,6 @@ http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
     return tilexyfixup(xtile, ytile, zoom)
 #+END_SRC
 
-#+name: MAPURL
-: http://localhost:8080/tiles/osm/webmercator
-
 #+name: deg2url
 #+BEGIN_SRC python :var lat=36.4 :var lon=-121.858 :var zoom=5 :var mapurl=MAPURL
   <<deg2tilexy>>
@@ -1783,13 +1780,6 @@ we know how to get one tile.  but, that is the small part of a
 screen.  presumably, e.g., Leaflet figures out the size of the screen,
 or its window.  we'll just fudge
 
-#+name: parameters
-| aspect  |    1 | x:y     |
-| screenx | 1200 | pixels  |
-| screeny |  800 | pixels  |
-| tilex   |  256 | pixels? |
-| tiley   |  256 | pixels? |
-
 then, given a set of coordinates, that we want in the center of the
 screen, and a zoom level, figure out the list of tiles we need to
 request.
@@ -1857,49 +1847,60 @@ request.
      return BBox(tnwx, tnwy, wit, hit, zoom)
 #+END_SRC
 
-#+name: getpngs
+
+#+name: MAPURL
+: http://localhost:8080/tiles/osm/webmercator
+
+#+name: parameters
+| aspect  |    1 | x:y     |
+| screenx | 1200 | pixels  |
+| screeny |  800 | pixels  |
+| tilex   |  256 | pixels? |
+| tiley   |  256 | pixels? |
+
+#+name: getmapimage
 #+BEGIN_SRC python :results output verbatim :var lat=36.4 :var lon=-121.858 :var zoom=5 :var parms=parameters :var mapurl=MAPURL
-  import io
-  import PIL.Image
-  import urllib2
+  def getmapimage(lat, lon, zoom):
+     import io
+     import PIL.Image
+     import urllib2
 
-  <<bbox>>
-  p = {}
-  for i in parms:
-     p[i[0]] = i[1]
+     <<bbox>>
+     p = {}
+     for i in parms:
+        p[i[0]] = i[1]
 
-  # get bounding box and zoom
-  box = bbox(lat, lon, zoom)
-  # print "bbox tnwx, tnwy, wit, hit, zoom: ", box.tnwx, box.tnwy, box.wit, box.hit, box.zoom
+     # get bounding box and zoom
+     box = bbox(lat, lon, zoom)
+     # print "bbox tnwx, tnwy, wit, hit, zoom: ", box.tnwx, box.tnwy, box.wit, box.hit, box.zoom
 
-  # PIL's Image.paste() seems to be what we want for laying out our
-  # images: http://pillow.readthedocs.io/en/latest/reference/Image.html
-  # (maybe starting by creating an image with Image.new()?)
+     # PIL's Image.paste() seems to be what we want for laying out our
+     # images: http://pillow.readthedocs.io/en/latest/reference/Image.html
+     # (maybe starting by creating an image with Image.new()?)
 
-  iwp = p['tilex']*box.wit
-  ihp = p['tiley']*box.hit
+     iwp = p['tilex']*box.wit
+     ihp = p['tiley']*box.hit
 
-  im = PIL.Image.new("RGB", (iwp, ihp))
+     im = PIL.Image.new("RGB", (iwp, ihp))
 
-  # now, run through the list of tiles.  for each tile, download it,
-  # then paste it into the right place in the image.
+     # now, run through the list of tiles.  for each tile, download it,
+     # then paste it into the right place in the image.
 
-  for tx, ty, xoff, yoff in box:
-     # print "iter tx, ty, xoff, yoff: ", tx, ty, xoff, yoff
-     # http://stackoverflow.com/a/22682/1527747
-     url = "{u}/{z}/{x}/{y}.png".format(u=mapurl, z=box.zoom, x=tx, y=ty)
-     response = urllib2.urlopen(url)
-     data = response.read()
-     # [[http://pillow.readthedocs.io/en/latest/reference/Image.html][PIL.Image.frombytes()
-     # doc]] says: Note that this function decodes pixel data only,
-     # not entire images. If you have an entire image in a string,
-     # wrap it in a BytesIO object, and use open() to load it.
-     bio = io.BytesIO(data)
-     im2 = PIL.Image.open(bio)
-     # now, paste this in the right place on the big image
-     im.paste(im2, box=(xoff*p['tilex'], yoff*p['tiley']))
-  # im.show()
-  im.save("/Users/minshall/work/gis/python/foo.png")
+     for tx, ty, xoff, yoff in box:
+        # print "iter tx, ty, xoff, yoff: ", tx, ty, xoff, yoff
+        # http://stackoverflow.com/a/22682/1527747
+        url = "{u}/{z}/{x}/{y}.png".format(u=mapurl, z=box.zoom, x=tx, y=ty)
+        response = urllib2.urlopen(url)
+        data = response.read()
+        # [[http://pillow.readthedocs.io/en/latest/reference/Image.html][PIL.Image.frombytes()
+        # doc]] says: Note that this function decodes pixel data only,
+        # not entire images. If you have an entire image in a string,
+        # wrap it in a BytesIO object, and use open() to load it.
+        bio = io.BytesIO(data)
+        im2 = PIL.Image.open(bio)
+        # now, paste this in the right place on the big image
+        im.paste(im2, box=(xoff*p['tilex'], yoff*p['tiley']))
+     return im
 #+END_SRC
 
 #+RESULTS: getpngs
@@ -2066,10 +2067,11 @@ here, we try to get a PNG file, put it in the background, with the
 [[http://stackoverflow.com/a/32652903/1527747][right coordinates]], and then overlay our feature over it.
 
 #+name: ppShPoly
-#+BEGIN_SRC python :session py  :tangle ppshpoly :results none :shebang "#!/usr/bin/env python"
+#+BEGIN_SRC python :tangle ppshpoly :var parms=parameters :var mapurl=MAPURL :shebang "#!/usr/bin/env python"
   import os
 
   <<extractshape>>
+  <<getmapimage>>
   <<PpShape>>
 
   def main(argv):
@@ -2091,13 +2093,16 @@ here, we try to get a PNG file, put it in the background, with the
       shape = extractshape(args.filename[0], args.layername, args.featurename)
 
       # get centroid from shape
-      centroid = shape.centroid()
+      (centx, centy) = (shape.centroid.x, shape.centroid.y)
 
       # get image from getmapimage; returns image, plus the bbox (in lat/lon) of image
+      zoom = 10
+      image = getmapimage(centx, centy, zoom)
 
       # call shPoly on the shape
       pp = PpShape()
       pp.add(shape)
+      pp.imshow(image)
       pp.plot()
 
   if __name__ == "__main__":
