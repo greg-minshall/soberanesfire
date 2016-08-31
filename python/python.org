@@ -1398,16 +1398,19 @@ http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
       xtile %= n
 
     if ytile < 0 or ytile > n:
-      # if *y* out of bounds, negative, reflect around y axis
-      if ytile < 0:
-        ytile = n - (ytile%n)     # reflect around the N pole
-      else:
-        ytile %= n                # reflect around the S pole
-      # now, do we need to go to the other side of the world?
+      # first, do we need to go to the other side of the world?
       nhalves = int(ytile/(n/2.0))  # how many halves of earth did we wrap?
-      if nhalves%2 == 1:
+      print "nhalves ", nhalves
+      if nhalves%2 == 0:
         # yes, on the other side of the world
         xtile += n/2
+      # if *y* out of bounds, negative, reflect around y axis, which
+      # basically means absolute value (so, the distance to the relevant
+      # pole stays the same)
+      if ytile < 0:
+        ytile = abs(ytile)        # reflect around the N pole
+      else:
+        ytile = n - (ytile%n)     # reflect around the S pole
 
     # make sure we're in 1..2**zoom
     xtile %= n
@@ -1750,34 +1753,35 @@ deg2tilexy(lat, lon, zoom) 85 0 3  ==> tcenterx, tcentery 4 0
 wit, hit:  5 5
 (before tilexyfixup) tnwx, tnwy:  2 -2
 tilexyfixup: called with: xtile, ytile, zoom:  2 -2 3
-tilexyfixup returning (xtile, ytile):  2 2
-(after tilexyfixup) tnwx, tnwy:  2 2
-bbox tnwx, tnwy, wit, hit, zoom:  2 2 5 5 3
-iter tx, ty, xoff, yoff:  2 2 0 0
-iter tx, ty, xoff, yoff:  2 3 0 1
-iter tx, ty, xoff, yoff:  2 4 0 2
-iter tx, ty, xoff, yoff:  2 5 0 3
-iter tx, ty, xoff, yoff:  2 6 0 4
-iter tx, ty, xoff, yoff:  3 2 1 0
-iter tx, ty, xoff, yoff:  3 3 1 1
-iter tx, ty, xoff, yoff:  3 4 1 2
-iter tx, ty, xoff, yoff:  3 5 1 3
-iter tx, ty, xoff, yoff:  3 6 1 4
-iter tx, ty, xoff, yoff:  4 2 2 0
-iter tx, ty, xoff, yoff:  4 3 2 1
-iter tx, ty, xoff, yoff:  4 4 2 2
-iter tx, ty, xoff, yoff:  4 5 2 3
-iter tx, ty, xoff, yoff:  4 6 2 4
-iter tx, ty, xoff, yoff:  5 2 3 0
-iter tx, ty, xoff, yoff:  5 3 3 1
-iter tx, ty, xoff, yoff:  5 4 3 2
-iter tx, ty, xoff, yoff:  5 5 3 3
-iter tx, ty, xoff, yoff:  5 6 3 4
-iter tx, ty, xoff, yoff:  6 2 4 0
-iter tx, ty, xoff, yoff:  6 3 4 1
-iter tx, ty, xoff, yoff:  6 4 4 2
-iter tx, ty, xoff, yoff:  6 5 4 3
-iter tx, ty, xoff, yoff:  6 6 4 4
+nhalves  0
+tilexyfixup returning (xtile, ytile):  6 2
+(after tilexyfixup) tnwx, tnwy:  6 2
+bbox tnwx, tnwy, wit, hit, zoom:  6 2 5 5 3
+iter tx, ty, xoff, yoff:  6 2 0 0
+iter tx, ty, xoff, yoff:  6 3 0 1
+iter tx, ty, xoff, yoff:  6 4 0 2
+iter tx, ty, xoff, yoff:  6 5 0 3
+iter tx, ty, xoff, yoff:  6 6 0 4
+iter tx, ty, xoff, yoff:  7 2 1 0
+iter tx, ty, xoff, yoff:  7 3 1 1
+iter tx, ty, xoff, yoff:  7 4 1 2
+iter tx, ty, xoff, yoff:  7 5 1 3
+iter tx, ty, xoff, yoff:  7 6 1 4
+iter tx, ty, xoff, yoff:  0 2 2 0
+iter tx, ty, xoff, yoff:  0 3 2 1
+iter tx, ty, xoff, yoff:  0 4 2 2
+iter tx, ty, xoff, yoff:  0 5 2 3
+iter tx, ty, xoff, yoff:  0 6 2 4
+iter tx, ty, xoff, yoff:  1 2 3 0
+iter tx, ty, xoff, yoff:  1 3 3 1
+iter tx, ty, xoff, yoff:  1 4 3 2
+iter tx, ty, xoff, yoff:  1 5 3 3
+iter tx, ty, xoff, yoff:  1 6 3 4
+iter tx, ty, xoff, yoff:  2 2 4 0
+iter tx, ty, xoff, yoff:  2 3 4 1
+iter tx, ty, xoff, yoff:  2 4 4 2
+iter tx, ty, xoff, yoff:  2 5 4 3
+iter tx, ty, xoff, yoff:  2 6 4 4
 #+end_example
 
 #+BEGIN_SRC python :results output verbatim :var parms=parameters
