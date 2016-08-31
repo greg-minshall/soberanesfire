@@ -1501,6 +1501,9 @@ okay, gnuplot info file (commands:plot:binary:keywords) talks about
           defs = self.__mergedefaults__(**kwargs)
           self.__add__(shape, defs)
 
+      def addimage(self, image, **kwargs):
+          self.ax.imshow(image, **kwargs)
+
       def plot(self, **kwargs):
           defs = self.__mergedefaults__(**kwargs)
 
@@ -1635,6 +1638,7 @@ http://localhost:8080/tiles/osm/webmercator/0/0/0.png.  now it works.
   # from http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
     lat_rad = math.radians(lat_deg)
     n = 2.0 ** zoom
+    print "lat_deg lat_rad lon_deg zoom: ", lat_deg, lat_rad, lon_deg, zoom
     xtile = int(((lon_deg + 180.0) / 360.0) * n)
     ytile = int(((1.0 - ((math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad)))) / math.pi))) * (n/2.0))
 
@@ -2066,8 +2070,8 @@ algorithms, etc., which gives this formula
 here, we try to get a PNG file, put it in the background, with the
 [[http://stackoverflow.com/a/32652903/1527747][right coordinates]], and then overlay our feature over it.
 
-#+name: ppShPoly
-#+BEGIN_SRC python :tangle ppshpoly :var parms=parameters :var mapurl=MAPURL :shebang "#!/usr/bin/env python"
+#+name: ppShPolyMap
+#+BEGIN_SRC python :tangle ppshpolymap :var parms=parameters :var mapurl=MAPURL :shebang "#!/usr/bin/env python"
   import os
 
   <<extractshape>>
@@ -2093,16 +2097,16 @@ here, we try to get a PNG file, put it in the background, with the
       shape = extractshape(args.filename[0], args.layername, args.featurename)
 
       # get centroid from shape
-      (centx, centy) = (shape.centroid.x, shape.centroid.y)
+      (lat, lon) = (shape.centroid.y, shape.centroid.x)
 
       # get image from getmapimage; returns image, plus the bbox (in lat/lon) of image
-      zoom = 10
-      image = getmapimage(centx, centy, zoom)
+      zoom = 0
+      image = getmapimage(lat, lon, zoom)
 
       # call shPoly on the shape
       pp = PpShape()
       pp.add(shape)
-      pp.imshow(image)
+      pp.addimage(image)
       pp.plot()
 
   if __name__ == "__main__":
