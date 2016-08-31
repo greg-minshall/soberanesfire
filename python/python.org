@@ -2074,6 +2074,7 @@ algorithms, etc., which gives this formula
 
 **** TilePoint -- an experiment in progress
 
+#+name: tilepoint
 #+BEGIN_SRC python
   class TilePoint:
       """implements arithmetic for tiles that wrap around.  for longitude,
@@ -2097,8 +2098,9 @@ algorithms, etc., which gives this formula
       def __sameside__(self, y1, y2):
           """are two latitudes on the same half of the planet?  the model is
           that the latitudes wrap around the N and S poles"""
-          s1 = int(y1/self.doubles)%2
-          s2 = int(y2/self.doubles)%2
+          s1 = int(y1/self.powzoom)%2
+          s2 = int(y2/self.powzoom)%2
+          # print "sameside({0}, {1}), s1 {2}, s2 {3}".format(y1, y2, s1, s2)
           return s1 == s2
 
       def __add__(self, i,j):
@@ -2111,7 +2113,7 @@ algorithms, etc., which gives this formula
 
           # okay, at most once (-1) around the world
           i = i % self.powzoom
-          j = j % self.powzoom
+          j = j % self.doubles    # here, we might go a bit further
 
           self.x += i             # longitude trivial (we do modulus
                                   # reduction towards end of function,
@@ -2141,14 +2143,20 @@ algorithms, etc., which gives this formula
 
       def __str__(self):
           return "({0}, {1}, {2})".format(self.x, self.y, self.zoom)
+#+END_SRC
 
-  one = TilePoint(0, 7, 3)
-  one.__add__(0,15)
-  return one
+
+#+BEGIN_SRC python
+  <<tilepoint>>
+  res = []
+  for iy in range(2**6):
+          one = TilePoint(0, 0, 3)
+          one.__add__(0, iy)
+          res += [[0, iy, one.x, one.y]]
+  return res
 #+END_SRC
 
 #+RESULTS:
-| 0 | 6 | 3 |
 
 ** putting it all together?
 
