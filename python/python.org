@@ -1756,8 +1756,8 @@ request.
           """calculate the xy-coordinates in *data* space of *tile* space
     (TILEX, TILEY)"""
           import math
-          lon_deg = (tilex/(2**self.zoom)*360)-180
-          lat_rad = math.atan(math.sinh(math.pi-((tiley*2*math.pi)/(2**self.zoom))))
+          lon_deg = (((tilex*1.0)/(2.0**self.zoom))*360.0)-180.0
+          lat_rad = math.atan(math.sinh(math.pi-((tiley*2*math.pi)/(2.0**self.zoom))))
           lat_deg = math.degrees(lat_rad)
           return (lat_deg, lon_deg)
 
@@ -1846,31 +1846,47 @@ request.
           wit = int(math.ceil((p['screenx']*1.0)/(p['tilex']*1.0)))
           hit = int(math.ceil((p['screeny']*1.0)/(p['tiley']*1.0)))
           wit = max(wit, 3)
-          hit = max(hit, 3)                 # enforce some minimum
+          hit = max(hit, 3)       # enforce some minimum
           if wit % 2 == 0:
-             wit += 1
-          if hit % 2 == 0:                 # enforce oddness, so we *have* a
-             hit += 1                      # center XXX
+              wit += 1
+          if hit % 2 == 0:        # enforce oddness, so we *have* a
+              hit += 1            # center XXX
 
           if wit >= zoomexp or hit >= zoomexp:
-             # *** if we've zoomed out too far, recurse at a higher zoom level
-             return self.__tbbox__(lat, lon, zoom+1)
+              # *** if we've zoomed out too far, recurse at a higher zoom level
+              self.__tbbox__(lat, lon, zoom+1)
+          else:
+              # print "wit, hit: ", wit, hit
+              tnwx, tnwy = (tcenterx - ((wit-1)/2), tcentery - ((hit-1)/2))
 
-          # print "wit, hit: ", wit, hit
-          tnwx, tnwy = (tcenterx - ((wit-1)/2), tcentery - ((hit-1)/2))
+              # check to see if we are zoomed too far out, wrapped around, or some such
+              # print "(before tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
+              tnwx, tnwy = self.tilexyfixup(tnwx, tnwy, zoom)
+              # print "(after tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
 
-          # check to see if we are zoomed too far out, wrapped around, or some such
-          # print "(before tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
-          tnwx, tnwy = self.tilexyfixup(tnwx, tnwy, zoom)
-          # print "(after tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
-
-          self.tnwx = tnwx
-          self.tnwy = tnwy
-          self.wit = wit
-          self.hit = hit
-          self.zoom = zoom
+              self.tnwx = tnwx
+              self.tnwy = tnwy
+              self.wit = wit
+              self.hit = hit
+              self.zoom = zoom
 #+END_SRC
 
+
+#+BEGIN_SRC python :results output verbatim :var lat=36 :var lon=-121 :var zoom=10 :var parms=parameters
+  <<tbbox>>
+
+  p = {}
+  for i in parms:
+      p[i[0]] = i[1]
+
+  tbox = TBBox(lat, lon, zoom)
+
+  print lat, lon, zoom, tbox.dnwlatlon(), tbox.dselatlon(), tbox.tnwx, tbox.wit, tbox.tnwy, tbox.hit
+
+#+END_SRC
+
+#+RESULTS:
+: 36 -121 10 (36.5978891330702, -121.9921875) (35.17380831799959, -120.234375) 165 5 400 5
 
 #+name: MAPURL
 : http://localhost:8080/tiles/osm/webmercator
