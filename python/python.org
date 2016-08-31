@@ -2091,6 +2091,16 @@ algorithms, etc., which gives this formula
           self.y = y
           self.zoom = zoom
           self.powzoom = 2**zoom  # for efficiency
+          self.halves = self.powzoom/2 # ditto
+          self.doubles = self.powzoom*2 # ditto
+
+      def __sameside__(self, y1, y2):
+          """are two latitudes on the same half of the planet?  the model is
+          that the latitudes wrap around the N and S poles"""
+          s1 = int(y1/self.doubles)%2
+          s2 = int(y2/self.doubles)%2
+          return s1 == s2
+
       def __add__(self, i,j):
           # so, we're going to do this very slowly
           if i < 0:
@@ -2103,22 +2113,23 @@ algorithms, etc., which gives this formula
           i = i % self.powzoom
           j = j % self.powzoom
 
-          self.x += i             # longitude trivial
+          self.x += i             # longitude trivial (we do modulus
+                                  # reduction towards end of function,
+                                  # as we may yet mess with x)
 
-          halves = self.powzoom/2
           # if we wrap below S pole, we move from, say, (0, 3) to "(4,
           # 0)", i.e. to that tile just on the other side of the S pole.
           # but, that tile has a *different* name over there, namely,
           # (4,3).  and, on *that* side, we are *subtracting* in the y
           # coordinate when we are adding from *this* side.  detect
           # this.
-          if ((self.y+j) % halves) == (self.y % halves):
+          if self.__sameside__(self.y, self.y+j):
               self.y += j         # easy case, on same side, just add
           else:
-              self.x += halves    # other side of world
+              self.x += self.halves    # other side of world
               # next, get to the first tile beyond S pole ...
-              j -= (halves-self.y)
-              self.y = halves-1;  # .. a tile called this
+              j -= (self.powzoom-self.y)
+              self.y = self.powzoom-1; # .. a tile called this
               self.y -= j         # then, "advance backwards" the rest
                                   # of our journey
           # now, make sure we're in bounds
@@ -2131,13 +2142,13 @@ algorithms, etc., which gives this formula
       def __str__(self):
           return "({0}, {1}, {2})".format(self.x, self.y, self.zoom)
 
-  one = TilePoint(0, 0, 3)
-  one.__add__(2,3)
+  one = TilePoint(0, 7, 3)
+  one.__add__(0,15)
   return one
 #+END_SRC
 
 #+RESULTS:
-| 6 | 4 | 3 |
+| 0 | 6 | 3 |
 
 ** putting it all together?
 
