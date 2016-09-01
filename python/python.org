@@ -1748,6 +1748,97 @@ then, given a set of coordinates, that we want in the center of the
 screen, and a zoom level, figure out the list of tiles we need to
 request.
 
+**** TilePoint -- an experiment in progress
+
+#+name: tilepoint
+#+BEGIN_SRC python
+  class TilePoint:
+      """implements arithmetic for tiles that wrap around.  for longitude,
+  this is just basically modulo (2**zoom) arithmetic.  trickier is for
+  latitude.  for example, with zoom 3 (2**3 = 8) if you are at
+  latitude 0, and want to go "up" one tile (by subtracting by (0,1),
+  say), you should *not* end up at (0, 7), *nor* should you end up at
+  (4,7).  rather, you should end up at (4,0).  but, *then*, on the next
+  subtraction by (0,1), you should end up at (4,7).  possibly it's not
+  possible.
+
+      """
+      def __init__(self, x, y, zoom):
+          self.x = x
+          self.y = y
+          self.zoom = zoom
+          self.powzoom = 2**zoom  # for efficiency
+          self.halves = self.powzoom/2 # ditto
+          self.doubles = self.powzoom*2 # ditto
+
+      def __sameside__(self, y1, y2):
+          """are two latitudes on the same half of the planet?  the model is
+          that the latitudes wrap around the N and S poles"""
+          s1 = int(y1/self.powzoom)%2
+          s2 = int(y2/self.powzoom)%2
+          # print "sameside({0}, {1}), s1 {2}, s2 {3}".format(y1, y2, s1, s2)
+          return s1 == s2
+
+      def __add__(self, ij):
+          i,j = ij
+          rval = TilePoint(self.x, self.y, self.zoom)
+          # so, we're going to do this very slowly
+          if i < 0:
+              # subtraction of |i| is like addition of modulus - |i|
+              i = rval.powzoom+i
+          if j < 0:
+              j = rval.powzoom+j  # ditto
+
+          # okay, at most once (-1) around the world
+          i = i % rval.powzoom
+          j = j % rval.doubles    # here, we might go a bit further
+
+          rval.x += i             # longitude trivial (we do modulus
+                                  # reduction towards end of function,
+                                  # as we may yet mess with x)
+
+          # if we wrap below S pole, we move from, say, (0, 3) to "(4,
+          # 0)", i.e. to that tile just on the other side of the S pole.
+          # but, that tile has a *different* name over there, namely,
+          # (4,3).  and, on *that* side, we are *subtracting* in the y
+          # coordinate when we are adding from *this* side.  detect
+          # this.
+          if rval.__sameside__(rval.y, rval.y+j):
+              rval.y += j         # easy case, on same side, just add
+          else:
+              rval.x += rval.halves    # other side of world
+              # next, get to the first tile beyond S pole ...
+              j -= (rval.powzoom-rval.y)
+              rval.y = rval.powzoom-1; # .. a tile called this
+              rval.y -= j         # then, "advance backwards" the rest
+                                  # of our journey
+          # now, make sure we're in bounds
+          rval.y %= rval.powzoom
+          rval.x %= rval.powzoom
+          return rval
+
+      def __sub__(self, ij):
+          i,j = (ij)
+          return self.__add__((-i, -j))
+
+      def __str__(self):
+          return "({0}, {1}, {2})".format(self.x, self.y, self.zoom)
+#+END_SRC
+
+
+#+BEGIN_SRC python
+  <<tilepoint>>
+  res = []
+  one = TilePoint(0, 0, 3)
+  for iy in range(2**6):
+          two = one + (0, iy)
+          res += [[0, iy, two.x, two.y]]
+  return res
+#+END_SRC
+
+**** TileBbox
+
+
 #+name: tilebbox
 #+BEGIN_SRC python :results output verbatim
   <<tilepoint>>
@@ -2081,94 +2172,6 @@ algorithms, etc., which gives this formula
 (of course, *i* have coordinates in lat/lon, *not* meters.  still...)
 
 *** misc
-
-**** TilePoint -- an experiment in progress
-
-#+name: tilepoint
-#+BEGIN_SRC python
-  class TilePoint:
-      """implements arithmetic for tiles that wrap around.  for longitude,
-  this is just basically modulo (2**zoom) arithmetic.  trickier is for
-  latitude.  for example, with zoom 3 (2**3 = 8) if you are at
-  latitude 0, and want to go "up" one tile (by subtracting by (0,1),
-  say), you should *not* end up at (0, 7), *nor* should you end up at
-  (4,7).  rather, you should end up at (4,0).  but, *then*, on the next
-  subtraction by (0,1), you should end up at (4,7).  possibly it's not
-  possible.
-
-      """
-      def __init__(self, x, y, zoom):
-          self.x = x
-          self.y = y
-          self.zoom = zoom
-          self.powzoom = 2**zoom  # for efficiency
-          self.halves = self.powzoom/2 # ditto
-          self.doubles = self.powzoom*2 # ditto
-
-      def __sameside__(self, y1, y2):
-          """are two latitudes on the same half of the planet?  the model is
-          that the latitudes wrap around the N and S poles"""
-          s1 = int(y1/self.powzoom)%2
-          s2 = int(y2/self.powzoom)%2
-          # print "sameside({0}, {1}), s1 {2}, s2 {3}".format(y1, y2, s1, s2)
-          return s1 == s2
-
-      def __add__(self, i,j):
-          rval = TilePoint(self.x, self.y, self.zoom)
-          # so, we're going to do this very slowly
-          if i < 0:
-              # subtraction of |i| is like addition of modulus - |i|
-              i = rval.powzoom+i
-          if j < 0:
-              j = rval.powzoom+j  # ditto
-
-          # okay, at most once (-1) around the world
-          i = i % rval.powzoom
-          j = j % rval.doubles    # here, we might go a bit further
-
-          rval.x += i             # longitude trivial (we do modulus
-                                  # reduction towards end of function,
-                                  # as we may yet mess with x)
-
-          # if we wrap below S pole, we move from, say, (0, 3) to "(4,
-          # 0)", i.e. to that tile just on the other side of the S pole.
-          # but, that tile has a *different* name over there, namely,
-          # (4,3).  and, on *that* side, we are *subtracting* in the y
-          # coordinate when we are adding from *this* side.  detect
-          # this.
-          if rval.__sameside__(rval.y, rval.y+j):
-              rval.y += j         # easy case, on same side, just add
-          else:
-              rval.x += rval.halves    # other side of world
-              # next, get to the first tile beyond S pole ...
-              j -= (rval.powzoom-rval.y)
-              rval.y = rval.powzoom-1; # .. a tile called this
-              rval.y -= j         # then, "advance backwards" the rest
-                                  # of our journey
-          # now, make sure we're in bounds
-          rval.y %= rval.powzoom
-          rval.x %= rval.powzoom
-          return rval
-
-      def __sub__(self, ij)
-          return self.__add__(-(ij))
-
-      def __str__(self):
-          return "({0}, {1}, {2})".format(self.x, self.y, self.zoom)
-#+END_SRC
-
-
-#+BEGIN_SRC python
-  <<tilepoint>>
-  res = []
-  one = TilePoint(0, 0, 3)
-  for iy in range(2**6):
-          two = one.__add__(0, iy)
-          res += [[0, iy, two.x, two.y]]
-  return res
-#+END_SRC
-
-#+RESULTS:
 
 ** putting it all together?
 
