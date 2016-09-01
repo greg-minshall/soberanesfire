@@ -1,4 +1,8 @@
 * using python for gis things
+** uninteresting org-mode setup, etc.
+
+#+property: header-args :noweb yes
+
 ** intro
 
 lots of code in this file hasn't really been developed.
@@ -7,7 +11,15 @@ last is what we are currently using).
 
 [[http://stackoverflow.com/questions/101268/hidden-features-of-python][hidden features of python exposed!!]]
 
-#+property: header-args :noweb yes
+*** python classes
+
+here are some references to Python classes
+- [[https://hplgit.github.io/primer.html/doc/pub/class/._class-readable005.html][good example]] of implementing a class, and also discusses some of the
+  __MAGIC__.
+- [[http://eli.thegreenplace.net/2016/a-polyglots-guide-to-multiple-dispatch-part-2][article]] on multiple dispatch
+- Guido [[https://www.artima.com/weblogs/viewpost.jsp?thread=101605][article]] on multi-methods
+- [[https://en.wikipedia.org/wiki/Python_syntax_and_semantics#Decorators][wiki entry on language features]] contains some info on decorators
+  (used in multi-methods)
 
 ** caution
 
@@ -1738,18 +1750,16 @@ request.
 
 #+name: tilebbox
 #+BEGIN_SRC python :results output verbatim
+  <<tilepoint>>
   class TileBbox:                    # a Tile Bounding Box
       def __init__(self, lat, lon, zoom):
           self.__tilebbox__(lat, lon, zoom)
 
       def __iter__(self):
-          xoff = 0
-          for tx in map(lambda x: (x+self.tnwx)%(2**self.zoom), range(self.wit)):
-              yoff = 0
-              for ty in map(lambda y: (y+self.tnwy)%(2**self.zoom), range(self.hit)):
-                  yield (tx, ty, xoff, yoff)
-                  yoff += 1
-              xoff += 1
+          for ix in range(self.wit):
+              for iy in range(self.hit):
+                  sum = self.tpt+(ix, iy)
+                  yield(sum.x, sum.y, ix, iy)
 
        # http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Lon..2Flat._to_tile_numbers_2
       def docalc(self, tilex, tiley):
@@ -1766,14 +1776,15 @@ request.
     of this box
 
           """
-          return self.docalc(self.tnwx, self.tnwy)
+          return self.docalc(self.tpt.x, self.tpt.y)
 
       def dselatlon(self):
           """return the lat/lon coordinates, in *data* space, of the se corner of
     this box
 
           """
-          return self.docalc(self.tnwx+self.wit, self.tnwy+self.hit) # XXX
+          se = self.tpt+(self.wit, self.hit)
+          return self.docalc(self.tpt.x+self.wit, self.tpt.y+self.hit) # XXX
 
       def tilexyfixup(self, xtile, ytile, zoom):
           import math
@@ -1864,8 +1875,7 @@ request.
               tnwx, tnwy = self.tilexyfixup(tnwx, tnwy, zoom)
               # print "(after tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
 
-              self.tnwx = tnwx
-              self.tnwy = tnwy
+              self.tpt = TilePoint(tnwx, tnwy, zoom)
               self.wit = wit
               self.hit = hit
               self.zoom = zoom
@@ -1917,7 +1927,7 @@ request.
 
      # get bounding box and zoom
      tbox = TileBbox(lat, lon, zoom)
-     print "tilebbox tnwx, tnwy, wit, hit, zoom: ", tbox.tnwx, tbox.tnwy, tbox.wit, tbox.hit, tbox.zoom
+     print "tilebbox tpt, wit, hit, zoom: ", tbox.tpt, tbox.wit, tbox.hit, tbox.zoom
 
      # PIL's Image.paste() seems to be what we want for laying out our
      # images: http://pillow.readthedocs.io/en/latest/reference/Image.html
@@ -2104,18 +2114,19 @@ algorithms, etc., which gives this formula
           return s1 == s2
 
       def __add__(self, i,j):
+          rval = TilePoint(self.x, self.y, self.zoom)
           # so, we're going to do this very slowly
           if i < 0:
               # subtraction of |i| is like addition of modulus - |i|
-              i = self.powzoom+i
+              i = rval.powzoom+i
           if j < 0:
-              j = self.powzoom+j  # ditto
+              j = rval.powzoom+j  # ditto
 
           # okay, at most once (-1) around the world
-          i = i % self.powzoom
-          j = j % self.doubles    # here, we might go a bit further
+          i = i % rval.powzoom
+          j = j % rval.doubles    # here, we might go a bit further
 
-          self.x += i             # longitude trivial (we do modulus
+          rval.x += i             # longitude trivial (we do modulus
                                   # reduction towards end of function,
                                   # as we may yet mess with x)
 
@@ -2125,21 +2136,22 @@ algorithms, etc., which gives this formula
           # (4,3).  and, on *that* side, we are *subtracting* in the y
           # coordinate when we are adding from *this* side.  detect
           # this.
-          if self.__sameside__(self.y, self.y+j):
-              self.y += j         # easy case, on same side, just add
+          if rval.__sameside__(rval.y, rval.y+j):
+              rval.y += j         # easy case, on same side, just add
           else:
-              self.x += self.halves    # other side of world
+              rval.x += rval.halves    # other side of world
               # next, get to the first tile beyond S pole ...
-              j -= (self.powzoom-self.y)
-              self.y = self.powzoom-1; # .. a tile called this
-              self.y -= j         # then, "advance backwards" the rest
+              j -= (rval.powzoom-rval.y)
+              rval.y = rval.powzoom-1; # .. a tile called this
+              rval.y -= j         # then, "advance backwards" the rest
                                   # of our journey
           # now, make sure we're in bounds
-          self.y %= self.powzoom
-          self.x %= self.powzoom
+          rval.y %= rval.powzoom
+          rval.x %= rval.powzoom
+          return rval
 
-      def __sub__(self, i,j):
-          self.__add__(-i, -j)
+      def __sub__(self, ij)
+          return self.__add__(-(ij))
 
       def __str__(self):
           return "({0}, {1}, {2})".format(self.x, self.y, self.zoom)
@@ -2149,10 +2161,10 @@ algorithms, etc., which gives this formula
 #+BEGIN_SRC python
   <<tilepoint>>
   res = []
+  one = TilePoint(0, 0, 3)
   for iy in range(2**6):
-          one = TilePoint(0, 0, 3)
-          one.__add__(0, iy)
-          res += [[0, iy, one.x, one.y]]
+          two = one.__add__(0, iy)
+          res += [[0, iy, two.x, two.y]]
   return res
 #+END_SRC
 
