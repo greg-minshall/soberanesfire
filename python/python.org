@@ -2391,27 +2391,37 @@ wlat, wlon, mlat, mlon:  0.0 135.0 0.0 135.0
 : 2nd diff by tbbox:  (85.0511287798066, 90.0, -40.97989806962013, -45.0) (145.6845950839313, -225.0)
 
 #+BEGIN_SRC python :results output verbatim
-<<slippymaps>>
+  <<slippymaps>>
 
-wlat = 35
-wlon = -163
-zoom = 5
+  wlat = 35
+  wlon = -163
+  zoom = 5
 
-mlat, mlon = wgs2merc(wlat, wlon)
+  mlat, mlon = wgs2merc(wlat, wlon)
 
-back2wlat, back2wlon = merc2wgs(mlat, mlon)
+  back2wlat, back2wlon = merc2wgs(mlat, mlon)
 
-print (wlat-back2wlat, wlon-back2wlon)
+  print (wlat-back2wlat, wlon-back2wlon)
 
-tilex, tiley = merclatlon2tilexy(mlat, mlon, zoom)
+  tilex, tiley = merclatlon2tilexy(mlat, mlon, zoom)
 
-back2mlat, back2mlon = tilexy2nwmerclatlon(tilex, tiley, zoom)
+  back2mlat, back2mlon = tilexy2nwmerclatlon(tilex, tiley, zoom)
 
-print "(mlat, mlon), (back2mlat, back2mlon), (diff): ", (mlat, mlon), (back2mlat, back2mlon), (mlat-back2mlat, mlon-back2mlon)
+  # here, we expect some offset, since we're getting back the NW corner
+  # of the enclosing tile
+
+  # print "(mlat, mlon), (back2mlat, back2mlon), (diff): ", (mlat, mlon), (back2mlat, back2mlon), (mlat-back2mlat, mlon-back2mlon)
+  print "(diff): ", (mlat-back2mlat, mlon-back2mlon)
+
+  tilex2, tiley2 = merclatlon2tilexy(back2mlat, back2mlon, zoom)
+  back2mlat2, back2mlon2 = tilexy2nwmerclatlon(tilex2, tiley2, zoom)
+
+  print "(diff): ", (back2mlat-back2mlat2, back2mlon-back2mlon2)
 
 #+END_SRC
 
 #+RESULTS:
 : (0.0, 0)
-: (mlat, mlon), (back2mlat, back2mlon), (diff):  (37.404780729700335, -163) (37.502762302228156, -163.16646844581987) (-0.09798157252782147, 0.16646844581987352)
+: (diff):  (-0.09798157252782147, 0.16646844581987352)
+: (diff):  (0.0, 0.0)
 
