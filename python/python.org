@@ -1838,7 +1838,6 @@ request.
 
 **** TileBbox
 
-
 #+name: tilebbox
 #+BEGIN_SRC python :results output verbatim
   <<tilepoint>>
@@ -1875,7 +1874,7 @@ request.
 
           """
           se = self.tpt+(self.wit, self.hit)
-          return self.docalc(self.tpt.x+self.wit, self.tpt.y+self.hit) # XXX
+          return self.docalc(self.tpt.x+(self.wit+1), self.tpt.y+(self.hit+1)) # XXX
 
       def tilexyfixup(self, xtile, ytile, zoom):
           import math
@@ -2197,6 +2196,8 @@ here, we try to get a PNG file, put it in the background, with the
                           help="name of desired layer (in file)")
       parser.add_argument('-f', '--featurename', type=str, required=True,
                           help="name of desired feature (within layer)")
+      parser.add_argument('-z', '--zoom', type=int, default=10,
+                          help="zoom level (0=zoomed out; default 10)")
       # use "type=str" since we use the file name for ogr.Open()
       parser.add_argument('filename', type=str, nargs=1)
       args = parser.parse_args();
@@ -2208,8 +2209,7 @@ here, we try to get a PNG file, put it in the background, with the
       (lat, lon) = (shape.centroid.y, shape.centroid.x)
 
       # get image from getmapimage; returns image, plus the tilebbox (in lat/lon) of image
-      zoom = 0
-      (image, (dnwlat, dnwlon), (dselat, dselon)) = getmapimage(lat, lon, zoom)
+      (image, (dnwlat, dnwlon), (dselat, dselon)) = getmapimage(lat, lon, args.zoom)
 
       # call shPoly on the shape
       pp = PpShape()
@@ -2217,7 +2217,7 @@ here, we try to get a PNG file, put it in the background, with the
       # problem: lat == y, lon == x, yet we're used to saying "lat/lon",
       # as well as to saying "x, y"
       print "dnwlon, dnwlat, dselon, dselat: ", dnwlon, dnwlat, dselon, dselat
-      pp.addimage(image, extent=[dnwlon, dnwlat, dselon, dselat])
+      pp.addimage(image, extent=[dnwlon, dselon, dnwlat, dselat])
       pp.plot()
 
   if __name__ == "__main__":
@@ -2226,4 +2226,62 @@ here, we try to get a PNG file, put it in the background, with the
 #+END_SRC
 
 #+RESULTS: ppShPolyMap
+
+** misc
+
+from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][osm wiki page]], the degrees covered by a tile in (x,y) is:
+: 360/2n x 170.1022/2n
+
+#+BEGIN_SRC python :results output verbatim :var zoom=0 :var hwit=1 :var nwlon=-146.25 :var nwlat=55.7765730187 :var parms=parameters
+  <<tilebbox>>
+  def calcbyalgorith(nwlat, nwlon, zoom):
+      if hwit == None:
+          raise ValueError("calcbyalgorith() called before global variable hwit set (should be set by calbytbbox?)")
+
+      xnum = 360.0
+      ynum = 170.1022
+
+      denom = 2**zoom
+
+      perxtile = xnum/denom
+      perytile = ynum/denom
+
+      selat = nwlat - (hwit*perytile)
+      selon = nwlon + (hwit*perxtile)
+
+      print "perytile, perxtile: ", perytile, perxtile
+      return (nwlat-selat, nwlon-selon)
+
+
+  def calcbytbbox(nwlat, nwlon, zoom):
+      global hwit
+
+      tbbox = TileBbox(nwlat, nwlon, zoom)
+      if tbbox.hit != tbbox.wit:
+          raise ValueError("tbbox hit ({0}) != tbbox.wit ({1})".format(tbbox.hit,
+                                                                       tbbox.wit))
+      hwit = tbbox.hit
+      # passed nwlat,  nwlon, were for *center* of region
+      (nwlat, nwlon) = tbbox.dnwlatlon()
+      (selat, selon) = tbbox.dselatlon()
+      return (nwlat-selat, nwlon-selon)
+
+  hwit = None
+  p = {}
+  for i in parms:
+      p[i[0]] = i[1]
+
+  bytbbox = calcbytbbox(nwlat, nwlon, zoom) # need to do this first to set hwit
+  byalgo = calcbyalgorith(nwlat, nwlon, zoom)
+
+  print "nwlat, nwlon, hwit: ", (nwlat, nwlon, hwit)
+  print "diff by tbbox: ", bytbbox
+  print "diff by algorithm: ", byalgo
+#+END_SRC
+
+#+RESULTS:
+: perytile, perxtile:  170.1022 360.0
+: nwlat, nwlon, hwit:  (55.7765730187, -146.25, 5)
+: diff by tbbox:  (151.56438922291846, -270.0)
+: diff by algorithm:  (850.5110000000001, -1800.0)
 
