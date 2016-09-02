@@ -2232,8 +2232,12 @@ here, we try to get a PNG file, put it in the background, with the
 from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][osm wiki page]], the degrees covered by a tile in (x,y) is:
 : 360/2n x 170.1022/2n
 
-#+BEGIN_SRC python :results output verbatim :var zoom=0 :var hwit=1 :var nwlon=-146.25 :var nwlat=55.7765730187 :var parms=parameters
+#+name: testcalcs
+#+BEGIN_SRC python
   <<tilebbox>>
+  def diffs(packed):
+      return (packed[0]-packed[2], packed[1]-packed[3])
+
   def calcbyalgorith(nwlat, nwlon, zoom):
       if hwit == None:
           raise ValueError("calcbyalgorith() called before global variable hwit set (should be set by calbytbbox?)")
@@ -2250,7 +2254,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][osm wiki page]],
       selon = nwlon + (hwit*perxtile)
 
       print "perytile, perxtile: ", perytile, perxtile
-      return (nwlat-selat, nwlon-selon)
+      return (nwlat, nwlon, selat, selon)
 
 
   def calcbytbbox(nwlat, nwlon, zoom):
@@ -2264,8 +2268,11 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][osm wiki page]],
       # passed nwlat,  nwlon, were for *center* of region
       (nwlat, nwlon) = tbbox.dnwlatlon()
       (selat, selon) = tbbox.dselatlon()
-      return (nwlat-selat, nwlon-selon)
+      return (nwlat, nwlon, selat, selon)
+#+END_SRC
 
+#+BEGIN_SRC python :var zoom=32 :var nwlon=-146.25 :var nwlat=55.7765730187 :var parms=parameters :results output verbatim
+  <<testcalcs>>
   hwit = None
   p = {}
   for i in parms:
@@ -2275,13 +2282,13 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][osm wiki page]],
   byalgo = calcbyalgorith(nwlat, nwlon, zoom)
 
   print "nwlat, nwlon, hwit: ", (nwlat, nwlon, hwit)
-  print "diff by tbbox: ", bytbbox
-  print "diff by algorithm: ", byalgo
+  print "diff by tbbox: ", bytbbox, diffs(bytbbox)
+  print "diff by algorithm: ", byalgo, diffs(byalgo)
 #+END_SRC
 
 #+RESULTS:
-: perytile, perxtile:  170.1022 360.0
+: perytile, perxtile:  3.96050047129e-08 8.38190317154e-08
 : nwlat, nwlon, hwit:  (55.7765730187, -146.25, 5)
-: diff by tbbox:  (151.56438922291846, -270.0)
-: diff by algorithm:  (850.5110000000001, -1800.0)
+: diff by tbbox:  (55.776573160092575, -146.25000016763806, 55.77657287724282, -146.24999966472387) (2.8284975428505277e-07, -5.029141902923584e-07)
+: diff by algorithm:  (55.7765730187, -146.25, 55.77657282067498, -146.24999958090484) (1.9802502038146486e-07, -4.1909515857696533e-07)
 
