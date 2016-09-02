@@ -1838,6 +1838,16 @@ request.
 
 **** TileBbox
 
+from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilenames]] page, some parameters of the algorithm:
+
+
+
+#+name: slippyparms
+| xzerodeg |                                       -180.0 |                     |
+| xmaxdeg  |                                        180.0 |                     |
+| yzerodeg |  math.degrees(math.atan(math.sinh(math.pi))) | mercator projection |
+| ymaxdeg  | -math.degrees(math.atan(math.sinh(math.pi))) | ditto               |
+
 #+name: tilebbox
 #+BEGIN_SRC python :results output verbatim
   <<tilepoint>>
@@ -1850,14 +1860,16 @@ request.
               for iy in range(self.hit):
                   sum = self.tpt+(ix, iy)
                   yield(sum.x, sum.y, ix, iy)
-
-       # http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Lon..2Flat._to_tile_numbers_2
-      def docalc(self, tilex, tiley):
+      # @staticmethod versus @classmethod
+      # http://stackoverflow.com/a/12179752/1527747
+      @staticmethod 
+      def tilexy2latlon(tilex, tiley, zoom):
           """calculate the xy-coordinates in *data* space of *tile* space
     (TILEX, TILEY)"""
+          # http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Lon..2Flat._to_tile_numbers_2
           import math
-          lon_deg = (((tilex*1.0)/(2.0**self.zoom))*360.0)-180.0
-          lat_rad = math.atan(math.sinh(math.pi-((tiley*2*math.pi)/(2.0**self.zoom))))
+          lon_deg = (((tilex*1.0)/(2.0**zoom))*360.0)-180.0
+          lat_rad = math.atan(math.sinh(math.pi-((tiley*2*math.pi)/(2.0**zoom))))
           lat_deg = math.degrees(lat_rad)
           return (lat_deg, lon_deg)
 
@@ -1866,7 +1878,7 @@ request.
     of this box
 
           """
-          return self.docalc(self.tpt.x, self.tpt.y)
+          return TileBbox.tilexy2latlon(self.tpt.x, self.tpt.y, self.zoom)
 
       def dselatlon(self):
           """return the lat/lon coordinates, in *data* space, of the se corner of
@@ -1874,7 +1886,7 @@ request.
 
           """
           se = self.tpt+(self.wit, self.hit)
-          return self.docalc(self.tpt.x+(self.wit+1), self.tpt.y+(self.hit+1)) # XXX
+          return TileBbox.tilexy2latlon(se.x, se.y, self.zoom) # XXX
 
       def tilexyfixup(self, xtile, ytile, zoom):
           import math
@@ -2217,7 +2229,7 @@ here, we try to get a PNG file, put it in the background, with the
       # problem: lat == y, lon == x, yet we're used to saying "lat/lon",
       # as well as to saying "x, y"
       print "dnwlon, dnwlat, dselon, dselat: ", dnwlon, dnwlat, dselon, dselat
-      pp.addimage(image, extent=[dnwlon, dselon, dnwlat, dselat])
+      pp.addimage(image, aspect=1.0, extent=[dnwlon, dselon, dnwlat, dselat])
       pp.plot()
 
   if __name__ == "__main__":
@@ -2257,21 +2269,24 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][osm wiki page]],
       return (nwlat, nwlon, selat, selon)
 
 
-  def calcbytbbox(nwlat, nwlon, zoom):
-      global hwit
+  def calcbytbbox(nwlat, nwlon, izoom):
+      global hwit, zoom
 
-      tbbox = TileBbox(nwlat, nwlon, zoom)
+      tbbox = TileBbox(nwlat, nwlon, izoom)
       if tbbox.hit != tbbox.wit:
           raise ValueError("tbbox hit ({0}) != tbbox.wit ({1})".format(tbbox.hit,
                                                                        tbbox.wit))
       hwit = tbbox.hit
+      zoom = tbbox.zoom
       # passed nwlat,  nwlon, were for *center* of region
       (nwlat, nwlon) = tbbox.dnwlatlon()
       (selat, selon) = tbbox.dselatlon()
       return (nwlat, nwlon, selat, selon)
 #+END_SRC
 
-#+BEGIN_SRC python :var zoom=10 :var nwlon=-146.25 :var nwlat=55.777 :var parms=parameters :results output verbatim
+#+RESULTS: testcalcs
+
+#+BEGIN_SRC python :var zoom=0 :var nwlon=-146.25 :var nwlat=55.777 :var parms=parameters :results output verbatim
   <<testcalcs>>
   hwit = None
   p = {}
@@ -2281,14 +2296,14 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][osm wiki page]],
   bytbbox = calcbytbbox(nwlat, nwlon, zoom) # need to do this first to set hwit
   byalgo = calcbyalgorith(nwlat, nwlon, zoom)
 
-  print "nwlat, nwlon, hwit: ", (nwlat, nwlon, hwit)
+  print "nwlat, nwlon, zoom, hwit: ", (nwlat, nwlon, zoom, hwit)
   print "diff by tbbox: ", bytbbox, diffs(bytbbox)
   print "diff by algorithm: ", byalgo, diffs(byalgo)
 #+END_SRC
 
 #+RESULTS:
-: perytile, perxtile:  0.166115429688 0.3515625
-: nwlat, nwlon, hwit:  (55.777, -146.25, 5)
-: diff by tbbox:  (56.36525013685607, -146.953125, 55.17886766328199, -144.84375) (1.1863824735740778, -2.109375)
-: diff by algorithm:  (55.777, -146.25, 54.9464228515625, -144.4921875) (0.8305771484374986, -1.7578125)
+: perytile, perxtile:  21.262775 45.0
+: nwlat, nwlon, zoom, hwit:  (55.777, -146.25, 3, 5)
+: diff by tbbox:  (85.0511287798066, 90.0, -66.51326044311186, 360.0) (151.56438922291846, -270.0)
+: diff by algorithm:  (55.777, -146.25, -50.53687500000001, 78.75) (106.31387500000001, -225.0)
 
