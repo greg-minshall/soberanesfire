@@ -1837,21 +1837,87 @@ request.
   return res
 #+END_SRC
 
-**** TileBbox
+**** SlippyMaps
 
 from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilenames]] page, some parameters of the algorithm:
-
-
 
 #+name: slippyparms
 | xzerodeg |                                       -180.0 |                     |
 | xmaxdeg  |                                        180.0 |                     |
 | yzerodeg |  math.degrees(math.atan(math.sinh(math.pi))) | mercator projection |
 | ymaxdeg  | -math.degrees(math.atan(math.sinh(math.pi))) | ditto               |
+| tilex    |                                          256 |                     |
+| tiley    |                                          256 |                     |
+
+#+name: slippymaps
+#+BEGIN_SRC python :var slippyparms=slippyparms
+  def wgs2merc(wlat, wlon):
+      """convert (lat, lon) in WGS84/EPSG:4326 coordinates to
+  Mercator/EPSG:3857 coordinates
+
+      """
+
+      import math
+
+      mlon = wlon                 # identity transform
+
+      wlatrad = math.radians(wlat)
+      mlatrad = math.log(math.tan(wlatrad)+(1/math.cos(wlatrad)))
+      mlat = math.degrees(mlatrad)
+
+      return mlat, mlon
+
+  def merc2wgs(mlat, mlon):
+      """convert (lat, lon) in Mercator/EPSG:3857 coordinates to
+  WGS84/EPSG:4326 coordintes"""
+
+      import math
+
+      wlon = mlon                 # identify transform
+
+      mlatrad = math.radians(mlat)
+      wlatrad = math.atan(math.sinh(mlatrad))
+      wlat = math.degrees(wlatrad)
+
+      return (wlat, wlon)
+
+  def merclatlon2tilexy(mlat, mlon, zoom):
+      """given a *Mercator* (lat, lon), return the (tilex, tiley) that holds
+  this location
+
+      """
+      import math
+
+      x = (1.0 + (mlon/math.pi))/2.0
+      y = (1.0 - (mlat/math.pi))/2.0
+
+      n = 2**zoom
+
+      tilex = math.floor(x*n)
+      tiley = math.floor(y*n)
+      return (tilex, tiley)
+
+  def tilexy2nwmerclatlon(tilex, tiley, zoom):
+      """given a (TILEX, TILEY) of a tiling at ZOOM, return the Mercator
+  (lat, lon) of its *northwest* corner"""
+
+      import math
+
+      n = 2**zoom
+      mlon = ((((tilex*1.0)/n)*2.0)-1.0)*math.pi
+      mlat = (1-(((tiley*1.0)/n)*2.0))*math.pi
+
+      return (mlat, mlon)
+#+END_SRC
+
+**** TileBbox
+
+
 
 #+name: tilebbox
 #+BEGIN_SRC python :results output verbatim
   <<tilepoint>>
+  <<slippymaps>>
   class TileBbox:                    # a Tile Bounding Box
       def __init__(self, lat, lon, zoom):
           self.__tilebbox__(lat, lon, zoom)
@@ -1928,15 +1994,10 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
 
       def deg2tilexy(self, lat_deg, lon_deg, zoom):
           """give lat/lon (in decimal) and a zoom, return the tilex and tiley coordinates of the required tile"""
-          import math
-          # from http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
-          lat_rad = math.radians(lat_deg)
-          n = 2.0 ** zoom
-          # print "lat_deg lat_rad lon_deg zoom: ", lat_deg, lat_rad, lon_deg, zoom
-          xtile = int(((lon_deg + 180.0) / 360.0) * n)
-          ytile = int(((1.0 - ((math.log(math.tan(lat_rad) + (1 / math.cos(lat_rad)))) / math.pi))) * (n/2.0))
-
-          return self.tilexyfixup(xtile, ytile, zoom)
+        
+          lat_rad, lon_rad = wgs2merc(lat_deg, lon_deg)
+        
+          return merclatlon2tilexy(lat_rad, lon_rad, zoom)
 
       def __tilebbox__(self, lat, lon, zoom):
           """given (LAT, LON), a set of coordinates, and ZOOM, a [proposed] zoom
@@ -2300,11 +2361,57 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][osm wiki page]],
   print "nwlat, nwlon, zoom, hwit: ", (nwlat, nwlon, zoom, hwit)
   print "diff by tbbox: ", bytbbox, diffs(bytbbox)
   print "diff by algorithm: ", byalgo, diffs(byalgo)
+  print
+  second = calcbytbbox(bytbbox[0], bytbbox[1], zoom)
+  print "2nd diff by tbbox: ", bytbbox, diffs(second)
+
 #+END_SRC
 
 #+RESULTS:
+#+begin_example
+wlat, wlon, mlat, mlon:  55.777 -146.25 67.500759188 -146.25
+wlat, wlon, mlat, mlon:  55.777 -146.25 67.500759188 -146.25
+wlat, wlon, mlat, mlon:  55.777 -146.25 67.500759188 -146.25
+wlat, wlon, mlat, mlon:  55.777 -146.25 67.500759188 -146.25
+perytile, perxtile:  21.262775 45.0
+nwlat, nwlon, zoom, hwit:  (55.777, -146.25, 3, 5)
+diff by tbbox:  (0.0, 135.0, -66.51326044311186, -180.0) (66.51326044311186, 315.0)
+diff by algorithm:  (55.777, -146.25, -50.53687500000001, 78.75) (106.31387500000001, -225.0)
+
+wlat, wlon, mlat, mlon:  0.0 135.0 0.0 135.0
+2nd diff by tbbox:  (0.0, 135.0, -66.51326044311186, -180.0) (145.6845950839313, 135.0)
+#+end_example
+
+
 : perytile, perxtile:  21.262775 45.0
 : nwlat, nwlon, zoom, hwit:  (55.777, -146.25, 3, 5)
-: diff by tbbox:  (85.0511287798066, 90.0, -66.51326044311186, 360.0) (151.56438922291846, -270.0)
+: diff by tbbox:  (85.0511287798066, 90.0, -40.97989806962013, -45.0) (126.03102684942672, 135.0)
 : diff by algorithm:  (55.777, -146.25, -50.53687500000001, 78.75) (106.31387500000001, -225.0)
+: 
+: 2nd diff by tbbox:  (85.0511287798066, 90.0, -40.97989806962013, -45.0) (145.6845950839313, -225.0)
+
+#+BEGIN_SRC python :results output verbatim
+<<slippymaps>>
+
+wlat = 35
+wlon = -163
+zoom = 5
+
+mlat, mlon = wgs2merc(wlat, wlon)
+
+back2wlat, back2wlon = merc2wgs(mlat, mlon)
+
+print (wlat-back2wlat, wlon-back2wlon)
+
+tilex, tiley = merclatlon2tilexy(mlat, mlon, zoom)
+
+back2mlat, back2mlon = tilexy2nwmerclatlon(tilex, tiley, zoom)
+
+print "(mlat, mlon), (back2mlat, back2mlon), (diff): ", (mlat, mlon), (back2mlat, back2mlon), (mlat-back2mlat, mlon-back2mlon)
+
+#+END_SRC
+
+#+RESULTS:
+: (0.0, 0)
+: (mlat, mlon), (back2mlat, back2mlon), (diff):  (37.404780729700335, -163) (37.502762302228156, -163.16646844581987) (-0.09798157252782147, 0.16646844581987352)
 
