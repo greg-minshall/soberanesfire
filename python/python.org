@@ -1879,6 +1879,8 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
       wlatrad = math.atan(math.sinh(mlatrad))
       wlat = math.degrees(wlatrad)
 
+      print "merc2wgs (mlat, mlon), mlatrad, wlatrad, (wlat, wlon): ", (mlat, mlon), mlatrad, wlatrad, (wlat, wlon)
+
       return (wlat, wlon)
 
   def merclatlon2tilexy(mlat, mlon, zoom):
@@ -1888,13 +1890,18 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
       """
       import math
 
-      x = (1.0 + (mlon/math.pi))/2.0
-      y = (1.0 - (mlat/math.pi))/2.0
+      mlonrad = math.radians(mlon)
+      mlatrad = math.radians(mlat)
+
+      x = (1.0 + (mlonrad/math.pi))/2.0
+      y = (1.0 - (mlatrad/math.pi))/2.0
 
       n = 2**zoom
 
       tilex = math.floor(x*n)
       tiley = math.floor(y*n)
+
+      print "merclatlon2tilexy (mlat, mlon, zoom), (tilex, tiley): \n", (mlat, mlon, zoom), (tilex, tiley)
       return (tilex, tiley)
 
   def tilexy2nwmerclatlon(tilex, tiley, zoom):
@@ -1904,15 +1911,18 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
       import math
 
       n = 2**zoom
-      mlon = ((((tilex*1.0)/n)*2.0)-1.0)*math.pi
-      mlat = (1-(((tiley*1.0)/n)*2.0))*math.pi
+      mlonrad = ((((tilex*1.0)/n)*2.0)-1.0)*math.pi
+      mlatrad = (1-(((tiley*1.0)/n)*2.0))*math.pi
+
+      mlon = math.degrees(mlonrad)
+      mlat = math.degrees(mlatrad)
+
+      print "tilexy2nwmerclatlon (tilex, tiley, zoom), (mlat, mlon): ", (tilex, tiley, zoom), (mlat, mlon)
 
       return (mlat, mlon)
 #+END_SRC
 
 **** TileBbox
-
-
 
 #+name: tilebbox
 #+BEGIN_SRC python :results output verbatim
@@ -1929,31 +1939,26 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
                   yield(sum.x, sum.y, ix, iy)
       # @staticmethod versus @classmethod
       # http://stackoverflow.com/a/12179752/1527747
-      @staticmethod 
-      def tilexy2latlon(tilex, tiley, zoom):
-          """calculate the xy-coordinates in *data* space of *tile* space
-    (TILEX, TILEY)"""
-          # http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Lon..2Flat._to_tile_numbers_2
-          import math
-          lon_deg = (((tilex*1.0)/(2.0**zoom))*360.0)-180.0
-          lat_rad = math.atan(math.sinh(math.pi-((tiley*2*math.pi)/(2.0**zoom))))
-          lat_deg = math.degrees(lat_rad)
-          return (lat_deg, lon_deg)
 
       def dnwlatlon(self):
           """return the lat/lon coordinates, in *data* space, of the nw corner
     of this box
 
           """
-          return TileBbox.tilexy2latlon(self.tpt.x, self.tpt.y, self.zoom)
+          print "dnwlatlon at input: ", self.tpt.x, self.tpt.y, self.zoom
+          mlat, mlon = tilexy2nwmerclatlon(self.tpt.x, self.tpt.y, self.zoom)
+          print "dnwlatlon returning: ", merc2wgs(mlat, mlon)
+          return merc2wgs(mlat, mlon)
 
       def dselatlon(self):
           """return the lat/lon coordinates, in *data* space, of the se corner of
     this box
 
           """
-          se = self.tpt+(self.wit, self.hit)
-          return TileBbox.tilexy2latlon(se.x, se.y, self.zoom) # XXX
+          se = self.tpt+(self.wit, self.hit) # tile just se of our se
+          # (its nw == our se) XXX
+          mlat, mlon = tilexy2nwmerclatlon(se.x, se.y, self.zoom)
+          return merc2wgs(mlat, mlon)
 
       def tilexyfixup(self, xtile, ytile, zoom):
           import math
@@ -1994,9 +1999,9 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
 
       def deg2tilexy(self, lat_deg, lon_deg, zoom):
           """give lat/lon (in decimal) and a zoom, return the tilex and tiley coordinates of the required tile"""
-        
+
           lat_rad, lon_rad = wgs2merc(lat_deg, lon_deg)
-        
+
           return merclatlon2tilexy(lat_rad, lon_rad, zoom)
 
       def __tilebbox__(self, lat, lon, zoom):
@@ -2119,7 +2124,6 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
         im2 = PIL.Image.open(bio)
         # now, paste this in the right place on the big image
         im.paste(im2, box=(xoff*p['tilex'], yoff*p['tiley']))
-
 
      print "tbox.dnwlatlon, dselatlon: ", tbox.dnwlatlon(), tbox.dselatlon()
      return (im, tbox.dnwlatlon(), tbox.dselatlon())
@@ -2369,26 +2373,23 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][osm wiki page]],
 
 #+RESULTS:
 #+begin_example
-wlat, wlon, mlat, mlon:  55.777 -146.25 67.500759188 -146.25
-wlat, wlon, mlat, mlon:  55.777 -146.25 67.500759188 -146.25
-wlat, wlon, mlat, mlon:  55.777 -146.25 67.500759188 -146.25
-wlat, wlon, mlat, mlon:  55.777 -146.25 67.500759188 -146.25
+dnwlatlon at input:  7 4 3
+dnwlatlon returning:  (mlat, mlon), mlatrad, wlatrad, (wlat, wlon):  (0.0, 2.356194490192345) 0.0 0.0 (0.0, 2.356194490192345)
+(0.0, 2.356194490192345)
+(mlat, mlon), mlatrad, wlatrad, (wlat, wlon):  (0.0, 2.356194490192345) 0.0 0.0 (0.0, 2.356194490192345)
+(mlat, mlon), mlatrad, wlatrad, (wlat, wlon):  (-1.5707963267948966, -3.141592653589793) -0.0274155677808 -0.0274121341082 (-1.5705995918442692, -3.141592653589793)
 perytile, perxtile:  21.262775 45.0
 nwlat, nwlon, zoom, hwit:  (55.777, -146.25, 3, 5)
-diff by tbbox:  (0.0, 135.0, -66.51326044311186, -180.0) (66.51326044311186, 315.0)
+diff by tbbox:  (0.0, 2.356194490192345, -1.5705995918442692, -3.141592653589793) (1.5705995918442692, 5.497787143782138)
 diff by algorithm:  (55.777, -146.25, -50.53687500000001, 78.75) (106.31387500000001, -225.0)
 
-wlat, wlon, mlat, mlon:  0.0 135.0 0.0 135.0
-2nd diff by tbbox:  (0.0, 135.0, -66.51326044311186, -180.0) (145.6845950839313, 135.0)
+dnwlatlon at input:  5 2 3
+dnwlatlon returning:  (mlat, mlon), mlatrad, wlatrad, (wlat, wlon):  (1.5707963267948966, 0.7853981633974483) 0.0274155677808 0.0274121341082 (1.5705995918442692, 0.7853981633974483)
+(1.5705995918442692, 0.7853981633974483)
+(mlat, mlon), mlatrad, wlatrad, (wlat, wlon):  (1.5707963267948966, 0.7853981633974483) 0.0274155677808 0.0274121341082 (1.5705995918442692, 0.7853981633974483)
+(mlat, mlon), mlatrad, wlatrad, (wlat, wlon):  (-2.356194490192345, -1.5707963267948966) -0.0411233516712 -0.0411117657466 (-2.355530665607849, -1.5707963267948966)
+2nd diff by tbbox:  (0.0, 2.356194490192345, -1.5705995918442692, -3.141592653589793) (3.9261302574521184, 2.356194490192345)
 #+end_example
-
-
-: perytile, perxtile:  21.262775 45.0
-: nwlat, nwlon, zoom, hwit:  (55.777, -146.25, 3, 5)
-: diff by tbbox:  (85.0511287798066, 90.0, -40.97989806962013, -45.0) (126.03102684942672, 135.0)
-: diff by algorithm:  (55.777, -146.25, -50.53687500000001, 78.75) (106.31387500000001, -225.0)
-: 
-: 2nd diff by tbbox:  (85.0511287798066, 90.0, -40.97989806962013, -45.0) (145.6845950839313, -225.0)
 
 #+BEGIN_SRC python :results output verbatim
   <<slippymaps>>
@@ -2416,12 +2417,23 @@ wlat, wlon, mlat, mlon:  0.0 135.0 0.0 135.0
   tilex2, tiley2 = merclatlon2tilexy(back2mlat, back2mlon, zoom)
   back2mlat2, back2mlon2 = tilexy2nwmerclatlon(tilex2, tiley2, zoom)
 
+  print "(back2mlat, back2mlon), (back2mlat2, back2mlon2): ", (back2mlat, back2mlon), (back2mlat2, back2mlon2)
   print "(diff): ", (back2mlat-back2mlat2, back2mlon-back2mlon2)
 
 #+END_SRC
 
 #+RESULTS:
-: (0.0, 0)
-: (diff):  (-0.09798157252782147, 0.16646844581987352)
-: (diff):  (0.0, 0.0)
+#+begin_example
+merc2wgs (mlat, mlon), mlatrad, wlatrad, (wlat, wlon):  (37.404780729700335, -163) 0.65283657972 0.610865238198 (35.0, -163)
+(0.0, 0)
+merclatlon2tilexy (mlat, mlon, zoom), (tilex, tiley): 
+(37.404780729700335, -163, 5) (1.0, 12.0)
+tilexy2nwmerclatlon (tilex, tiley, zoom), (mlat, mlon):  (1.0, 12.0, 5) (0.7853981633974483, -2.945243112740431)
+(diff):  (36.61938256630289, -160.05475688725957)
+merclatlon2tilexy (mlat, mlon, zoom), (tilex, tiley): 
+(0.7853981633974483, -2.945243112740431, 5) (15.0, 15.0)
+tilexy2nwmerclatlon (tilex, tiley, zoom), (mlat, mlon):  (15.0, 15.0, 5) (0.19634954084936207, -0.19634954084936207)
+(back2mlat, back2mlon), (back2mlat2, back2mlon2):  (0.7853981633974483, -2.945243112740431) (0.19634954084936207, -0.19634954084936207)
+(diff):  (0.5890486225480862, -2.7488935718910685)
+#+end_example
 
