@@ -2016,7 +2016,7 @@ request.
         p[i[0]] = i[1]
 
      # get bounding box and zoom
-     tbox = TileBbox(lat, lon, zoom)
+     tbox = TileBbox(lat, lon, zoom) # XXX should pass shape bounding box to TileBbox
      print "tilebbox tpt, wit, hit, zoom: ", tbox.tpt, tbox.wit, tbox.hit, tbox.zoom
 
      # PIL's Image.paste() seems to be what we want for laying out our
@@ -2271,7 +2271,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][osm wiki page]],
       return (nwlat, nwlon, selat, selon)
 #+END_SRC
 
-#+BEGIN_SRC python :var zoom=32 :var nwlon=-146.25 :var nwlat=55.7765730187 :var parms=parameters :results output verbatim
+#+BEGIN_SRC python :var zoom=10 :var nwlon=-146.25 :var nwlat=55.777 :var parms=parameters :results output verbatim
   <<testcalcs>>
   hwit = None
   p = {}
@@ -2287,8 +2287,8 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][osm wiki page]],
 #+END_SRC
 
 #+RESULTS:
-: perytile, perxtile:  3.96050047129e-08 8.38190317154e-08
-: nwlat, nwlon, hwit:  (55.7765730187, -146.25, 5)
-: diff by tbbox:  (55.776573160092575, -146.25000016763806, 55.77657287724282, -146.24999966472387) (2.8284975428505277e-07, -5.029141902923584e-07)
-: diff by algorithm:  (55.7765730187, -146.25, 55.77657282067498, -146.24999958090484) (1.9802502038146486e-07, -4.1909515857696533e-07)
+: perytile, perxtile:  0.166115429688 0.3515625
+: nwlat, nwlon, hwit:  (55.777, -146.25, 5)
+: diff by tbbox:  (56.36525013685607, -146.953125, 55.17886766328199, -144.84375) (1.1863824735740778, -2.109375)
+: diff by algorithm:  (55.777, -146.25, 54.9464228515625, -144.4921875) (0.8305771484374986, -1.7578125)
 
