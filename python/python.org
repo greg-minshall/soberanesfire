@@ -1782,9 +1782,13 @@ request.
 
       def __add__(self, ij):
           i,j = ij
-          print "i,j ", i, j
+          # print "i,j ", i, j
+          # later, we'll want to know if y and y+j are on the same side
+          # (mod 2) of the world; we're going to mess with j below, so
+          # save the answer
+          ysameside = self.__sameside__(self.y, self.y+j)
           rval = TilePoint(self.x, self.y, self.zoom)
-          print "rval(1) ", rval
+          # print "rval(1) ", rval
           # so, we're going to do this very slowly
           if i < 0:
               # subtraction of |i| is like addition of modulus - |i|
@@ -1792,16 +1796,17 @@ request.
           if j < 0:
               j = rval.powzoom+j  # ditto
 
-          print "(i,j), (i,j)
+
+
           # okay, at most once (-1) around the world
           i = i % rval.powzoom
           j = j % rval.doubles    # here, we might go a bit further
-          print "rval(2) ", rval
+          # print "(i,j)", (i,j)
 
           rval.x += i             # longitude trivial (we do modulus
                                   # reduction towards end of function,
                                   # as we may yet mess with x)
-          print "rval(3) ", rval
+          # print "rval(3) ", rval
 
           # if we wrap below S pole, we move from, say, (0, 3) to "(4,
           # 0)", i.e. to that tile just on the other side of the S pole.
@@ -1809,19 +1814,19 @@ request.
           # (4,3).  and, on *that* side, we are *subtracting* in the y
           # coordinate when we are adding from *this* side.  detect
           # this.
-          if rval.__sameside__(rval.y, rval.y+j):
+          if ysameside:
               rval.y += j         # easy case, on same side, just add
-              print "rval(4) ", rval
+              # print "rval(4) ", rval
           else:
               rval.x += rval.halves    # other side of world
               # next, get to the first tile beyond S pole ...
               j -= (rval.powzoom-rval.y)
               rval.y = rval.powzoom-1; # .. a tile called this
               rval.y -= j         # then, "advance backwards" the rest
-              print "rval(5) ", rval
+              # print "rval(5) ", rval
                                   # of our journey
           # now, make sure we're in bounds
-          print "rval ", rval
+          # print "rval ", rval
           rval.y %= rval.powzoom
           rval.x %= rval.powzoom
           return rval
@@ -2026,7 +2031,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
           zoomexp = 2**zoom            # just for convenience
 
           tcenter = TilePoint(*self.deg2tilexy(lat, lon, zoom), zoom=zoom)
-          print "tcenter ", tcenter
+          # print "tcenter ", tcenter
           # print "deg2tilexy(lat, lon, zoom)", lat, lon, zoom, " ==> tcenterx, tcentery", tcenterx, tcentery
 
           # so, tcenterx,tcentery is tile coordinates of the center of the map.  now get
@@ -2047,7 +2052,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
           else:
               # print "wit, hit: ", wit, hit
               self.tpt = tcenter - ((wit-1)/2, (hit-1)/2)
-              print tcenter, wit, hit, self.tpt
+              # print tcenter, wit, hit, self.tpt
               self.wit = wit
               self.hit = hit
               self.zoom = zoom
