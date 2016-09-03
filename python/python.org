@@ -1915,7 +1915,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
       tilex = int(math.floor(x*n))
       tiley = int(math.floor(y*n))
 
-      # print "merclatlon2tilexy (mlat, mlon, zoom), (mlatrad, mlonrad), (tilex, tiley): \n", (mlat, mlon, zoom), (mlatrad, mlonrad), (tilex, tiley)
+      print "merclatlon2tilexy (mlat, mlon, zoom), (mlatrad, mlonrad), (tilex, tiley): \n", (mlat, mlon, zoom), (mlatrad, mlonrad), (tilex, tiley)
       return (tilex, tiley)
 
   def tilexy2nwmerclatlon(tilex, tiley, zoom):
@@ -1986,8 +1986,19 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
   coordinates of the required tile.  we check for numerical instability
   by searching around the passed point and making sure everything "close enough" ends up in the same tile"""
 
+          if zoom == 0:           # only one tile
+              return (0, 0)
+
+          DIVISOR = 100           # XXX
+
+          (nwx, nwy) = tilexy2nwmerclatlon(0, 0, zoom)
+          (sex, sey) = tilexy2nwmerclatlon(1, 1, zoom)
+          xdelta = ((nwx-sex)*1.0)/DIVISOR
+          ydelta = ((nwy-sey)*1.0)/DIVISOR
+
           results = set()
-          for i, j in zip([-1, 1], [-1, 1]):
+          for i, j in zip([-xdelta, xdelta], [-ydelta, ydelta]):
+              print i,j
               results.add(TileBbox.__deg2tilexy__(lat_deg+i, lon_deg+j, zoom))
 
           if len(results) != 1:
@@ -2552,12 +2563,9 @@ fails for index values of 1 or 3, returning one less (0 or 2).
 #+END_SRC
 
 #+RESULTS:
-: 2.94524311274
-: tilexy2nwmerclatlon (tilex, tiley, zoom), (mlatrad, mlonrad), (mlat, mlon): 
-: (0, 1, 5) (2.945243112740431, -3.141592653589793) (168.75, -180.0)
 : merclatlon2tilexy (mlat, mlon, zoom), (mlatrad, mlonrad), (tilex, tiley): 
-: (168.75, -180.0, 5) (2.9452431127404313, -3.141592653589793) (0.0, 0.0)
-: (0, 1) (168.75, -180.0) (0.0, 0.0)
+: (168.75, -180.0, 5) (2.9452431127404313, -3.141592653589793) (0, 0)
+: (0, 1) (168.75, -180.0) (0, 0)
 
 otoh, it works for C (including atoi(3) for input variables)
 
