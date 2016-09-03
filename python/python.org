@@ -1937,7 +1937,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
 
       results = set()
       for i, j in zip([-xdelta, xdelta], [-ydelta, ydelta]):
-                    results.add(__merclatlon2tilexy__(mlat+i, mlon+j, zoom))
+          results.add(__merclatlon2tilexy__(mlat+i, mlon+j, zoom))
 
       if len(results) != 1:
           raise ArithmeticError("deg2tilexy on point ({0},{1}) too close to tile border at zoom {2}".format(mlat, mlon, zoom))
