@@ -2012,9 +2012,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
   coordinates of the required tile.
 
           """
-
-          lat_rad, lon_rad =  merclatlon2tilexy(*wgs2merc(lat_deg, lon_deg), zoom=zoom)
-          return merclatlon2tilexy(lat_rad, lon_rad, zoom)
+          return merclatlon2tilexy(*wgs2merc(lat_deg, lon_deg), zoom=zoom)
 
       def __tilebbox__(self, lat, lon, zoom):
           """given (LAT, LON), a set of coordinates, and ZOOM, a [proposed] zoom
