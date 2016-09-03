@@ -1514,8 +1514,10 @@ okay, gnuplot info file (commands:plot:binary:keywords) talks about
           self.__add__(shape, defs)
 
       def addimage(self, image, **kwargs):
+          print "addimage, kwargs: ", kwargs
           print "xlim, ylim: ", self.ax.get_xlim(), self.ax.get_ylim()
           self.ax.imshow(image, **kwargs)
+          print "xlim, ylim: ", self.ax.get_xlim(), self.ax.get_ylim()
 
       def plot(self, **kwargs):
           from matplotlib import pyplot
@@ -1879,7 +1881,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
       wlatrad = math.atan(math.sinh(mlatrad))
       wlat = math.degrees(wlatrad)
 
-      print "merc2wgs (mlat, mlon), mlatrad, wlatrad, (wlat, wlon): ", (mlat, mlon), mlatrad, wlatrad, (wlat, wlon)
+      # print "merc2wgs (mlat, mlon), mlatrad, wlatrad, (wlat, wlon): ", (mlat, mlon), mlatrad, wlatrad, (wlat, wlon)
 
       return (wlat, wlon)
 
@@ -1901,7 +1903,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
       tilex = math.floor(x*n)
       tiley = math.floor(y*n)
 
-      print "merclatlon2tilexy (mlat, mlon, zoom), (tilex, tiley): \n", (mlat, mlon, zoom), (tilex, tiley)
+      # print "merclatlon2tilexy (mlat, mlon, zoom), (tilex, tiley): \n", (mlat, mlon, zoom), (tilex, tiley)
       return (tilex, tiley)
 
   def tilexy2nwmerclatlon(tilex, tiley, zoom):
@@ -1917,7 +1919,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
       mlon = math.degrees(mlonrad)
       mlat = math.degrees(mlatrad)
 
-      print "tilexy2nwmerclatlon (tilex, tiley, zoom), (mlat, mlon): ", (tilex, tiley, zoom), (mlat, mlon)
+      # print "tilexy2nwmerclatlon (tilex, tiley, zoom), (mlat, mlon): ", (tilex, tiley, zoom), (mlat, mlon)
 
       return (mlat, mlon)
 #+END_SRC
@@ -1945,9 +1947,9 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
     of this box
 
           """
-          print "dnwlatlon at input: ", self.tpt.x, self.tpt.y, self.zoom
+          # print "dnwlatlon at input: ", self.tpt.x, self.tpt.y, self.zoom
           mlat, mlon = tilexy2nwmerclatlon(self.tpt.x, self.tpt.y, self.zoom)
-          print "dnwlatlon returning: ", merc2wgs(mlat, mlon)
+          # print "dnwlatlon returning: ", merc2wgs(mlat, mlon)
           return merc2wgs(mlat, mlon)
 
       def dselatlon(self):
@@ -2096,7 +2098,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
 
      # get bounding box and zoom
      tbox = TileBbox(lat, lon, zoom) # XXX should pass shape bounding box to TileBbox
-     print "tilebbox tpt, wit, hit, zoom: ", tbox.tpt, tbox.wit, tbox.hit, tbox.zoom
+     # print "tilebbox tpt, wit, hit, zoom: ", tbox.tpt, tbox.wit, tbox.hit, tbox.zoom
 
      # PIL's Image.paste() seems to be what we want for laying out our
      # images: http://pillow.readthedocs.io/en/latest/reference/Image.html
@@ -2125,7 +2127,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
         # now, paste this in the right place on the big image
         im.paste(im2, box=(xoff*p['tilex'], yoff*p['tiley']))
 
-     print "tbox.dnwlatlon, dselatlon: ", tbox.dnwlatlon(), tbox.dselatlon()
+     # print "tbox.dnwlatlon, dselatlon: ", tbox.dnwlatlon(), tbox.dselatlon()
      return (im, tbox.dnwlatlon(), tbox.dselatlon())
 #+END_SRC
 
