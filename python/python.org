@@ -1515,9 +1515,7 @@ okay, gnuplot info file (commands:plot:binary:keywords) talks about
 
       def addimage(self, image, **kwargs):
           print "addimage, kwargs: ", kwargs
-          print "xlim, ylim: ", self.ax.get_xlim(), self.ax.get_ylim()
           self.ax.imshow(image, **kwargs)
-          print "xlim, ylim: ", self.ax.get_xlim(), self.ax.get_ylim()
 
       def plot(self, **kwargs):
           from matplotlib import pyplot
@@ -1784,21 +1782,26 @@ request.
 
       def __add__(self, ij):
           i,j = ij
+          print "i,j ", i, j
           rval = TilePoint(self.x, self.y, self.zoom)
+          print "rval(1) ", rval
           # so, we're going to do this very slowly
           if i < 0:
               # subtraction of |i| is like addition of modulus - |i|
-              i = rval.powzoom+i
+              i = rval.powzoom+i  # i < 0, so "+i" == "-|i|"
           if j < 0:
               j = rval.powzoom+j  # ditto
 
+          print "(i,j), (i,j)
           # okay, at most once (-1) around the world
           i = i % rval.powzoom
           j = j % rval.doubles    # here, we might go a bit further
+          print "rval(2) ", rval
 
           rval.x += i             # longitude trivial (we do modulus
                                   # reduction towards end of function,
                                   # as we may yet mess with x)
+          print "rval(3) ", rval
 
           # if we wrap below S pole, we move from, say, (0, 3) to "(4,
           # 0)", i.e. to that tile just on the other side of the S pole.
@@ -1808,14 +1811,17 @@ request.
           # this.
           if rval.__sameside__(rval.y, rval.y+j):
               rval.y += j         # easy case, on same side, just add
+              print "rval(4) ", rval
           else:
               rval.x += rval.halves    # other side of world
               # next, get to the first tile beyond S pole ...
               j -= (rval.powzoom-rval.y)
               rval.y = rval.powzoom-1; # .. a tile called this
               rval.y -= j         # then, "advance backwards" the rest
+              print "rval(5) ", rval
                                   # of our journey
           # now, make sure we're in bounds
+          print "rval ", rval
           rval.y %= rval.powzoom
           rval.x %= rval.powzoom
           return rval
@@ -1938,7 +1944,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
           for ix in range(self.wit):
               for iy in range(self.hit):
                   sum = self.tpt+(ix, iy)
-                  yield(sum.x, sum.y, ix, iy)
+                  yield(int(sum.x), int(sum.y), ix, iy)
       # @staticmethod versus @classmethod
       # http://stackoverflow.com/a/12179752/1527747
 
@@ -2019,7 +2025,8 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
 
           zoomexp = 2**zoom            # just for convenience
 
-          tcenterx,tcentery = self.deg2tilexy(lat, lon, zoom)
+          tcenter = TilePoint(*self.deg2tilexy(lat, lon, zoom), zoom=zoom)
+          print "tcenter ", tcenter
           # print "deg2tilexy(lat, lon, zoom)", lat, lon, zoom, " ==> tcenterx, tcentery", tcenterx, tcentery
 
           # so, tcenterx,tcentery is tile coordinates of the center of the map.  now get
@@ -2039,14 +2046,8 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
               self.__tilebbox__(lat, lon, zoom+1)
           else:
               # print "wit, hit: ", wit, hit
-              tnwx, tnwy = (tcenterx - ((wit-1)/2), tcentery - ((hit-1)/2))
-
-              # check to see if we are zoomed too far out, wrapped around, or some such
-              # print "(before tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
-              tnwx, tnwy = self.tilexyfixup(tnwx, tnwy, zoom)
-              # print "(after tilexyfixup) tnwx, tnwy: ", tnwx, tnwy
-
-              self.tpt = TilePoint(tnwx, tnwy, zoom)
+              self.tpt = tcenter - ((wit-1)/2, (hit-1)/2)
+              print tcenter, wit, hit, self.tpt
               self.wit = wit
               self.hit = hit
               self.zoom = zoom
@@ -2291,13 +2292,20 @@ here, we try to get a PNG file, put it in the background, with the
       # get image from getmapimage; returns image, plus the tilebbox (in lat/lon) of image
       (image, (dnwlat, dnwlon), (dselat, dselon)) = getmapimage(lat, lon, args.zoom)
 
-      # call shPoly on the shape
       pp = PpShape()
+
+      # call shPoly on the shape
+      print "xlim, ylim: ", pp.ax.get_xlim(), pp.ax.get_ylim()
       pp.add(shape)
+      print "xlim, ylim: ", pp.ax.get_xlim(), pp.ax.get_ylim()
+
       # problem: lat == y, lon == x, yet we're used to saying "lat/lon",
       # as well as to saying "x, y"
       print "dnwlon, dnwlat, dselon, dselat: ", dnwlon, dnwlat, dselon, dselat
+      print "xlim, ylim: ", pp.ax.get_xlim(), pp.ax.get_ylim()
       pp.addimage(image, aspect=1.0, extent=[dnwlon, dselon, dselat, dnwlat])
+      print "xlim, ylim: ", pp.ax.get_xlim(), pp.ax.get_ylim()
+
       pp.plot()
 
   if __name__ == "__main__":
