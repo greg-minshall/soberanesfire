@@ -1987,9 +1987,9 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
     of this box
 
           """
-          # print "dnwlatlon at input: ", self.tpt.x, self.tpt.y, self.zoom
+          print "dnwlatlon at input: ", self.tpt.x, self.tpt.y, self.zoom
           mlat, mlon = tilexy2nwmerclatlon(self.tpt.x, self.tpt.y, self.zoom)
-          # print "dnwlatlon returning: ", merc2wgs(mlat, mlon)
+          print "dnwlatlon returning: ", merc2wgs(mlat, mlon)
           return merc2wgs(mlat, mlon)
 
       def dselatlon(self):
