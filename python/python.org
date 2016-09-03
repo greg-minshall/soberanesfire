@@ -988,7 +988,6 @@ this just consists of various general purpose routines i want to use
 in other applications.
 
 #+BEGIN_SRC python :tangle ~/usr/lib/python/ggmlib.py
-  <<eprint>>
   <<shPolyJson>>
   <<shPolyShape>>
   <<shPoly>>
@@ -1877,7 +1876,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
 
       wlatrad = math.radians(wlat)
       mlatrad = math.log(math.tan(wlatrad)+(1/math.cos(wlatrad)))
-      mlat = math.degrees(mlatrad)
+      mlat = math.degrees(mlatrad)%360
 
       return mlat, mlon
 
@@ -1912,7 +1911,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
       tilex = int(math.floor(x*n))
       tiley = int(math.floor(y*n))
 
-      # print "__merclatlon2tilexy__(mlat, mlon, zoom), (mlatrad, mlonrad), (tilex, tiley): \n", (mlat, mlon, zoom), (mlatrad, mlonrad), (tilex, tiley)
+      print "__merclatlon2tilexy__(mlat, mlon, zoom), (mlatrad, mlonrad), (tilex, tiley): \n", (mlat, mlon, zoom), (mlatrad, mlonrad), (tilex, tiley)
 
       return (tilex, tiley)
 
@@ -1930,8 +1929,9 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
 
       DIVISOR = 100.0             # XXX
 
-      (nwx, nwy) = tilexy2nwmerclatlon(0, 0, zoom)
-      (sex, sey) = tilexy2nwmerclatlon(1, 1, zoom)
+      # figure out what "far enough away" means (random)
+      (nwx, nwy) = tilexy2nwmerclatlon(0, 0, zoom, suppressDebug=True)
+      (sex, sey) = tilexy2nwmerclatlon(1, 1, zoom, suppressDebug=True)
       xdelta = ((nwx-sex)*1.0)/DIVISOR
       ydelta = ((nwy-sey)*1.0)/DIVISOR
 
@@ -1939,14 +1939,15 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
       for i, j in zip([-xdelta, xdelta], [-ydelta, ydelta]):
           results.add(__merclatlon2tilexy__(mlat+i, mlon+j, zoom))
 
+      # if we found > 1 tile, we're in trouble
       if len(results) != 1:
           raise ArithmeticError("deg2tilexy on point ({0},{1}) too close to tile border at zoom {2}".format(mlat, mlon, zoom))
 
-      tilex, tiley = results.pop()
+      tilex, tiley = results.pop() # only one tile -- remove it from set
 
-      return (tilex, tiley)
+      return (tilex, tiley)       # and return it
 
-  def tilexy2nwmerclatlon(tilex, tiley, zoom):
+  def tilexy2nwmerclatlon(tilex, tiley, zoom, suppressDebug=False):
       """given a (TILEX, TILEY) of a tiling at ZOOM, return the Mercator
   (lat, lon) of its *northwest* corner"""
 
@@ -1959,7 +1960,8 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
       mlon = math.degrees(mlonrad)
       mlat = math.degrees(mlatrad)
 
-      # print "tilexy2nwmerclatlon (tilex, tiley, zoom), (mlatrad, mlonrad), (mlat, mlon): \n", (tilex, tiley, zoom), (mlatrad, mlonrad), (mlat, mlon)
+      if not suppressDebug:
+          print "tilexy2nwmerclatlon (tilex, tiley, zoom), (mlatrad, mlonrad), (mlat, mlon): \n", (tilex, tiley, zoom), (mlatrad, mlonrad), (mlat, mlon)
 
       return (mlat, mlon)
 #+END_SRC
@@ -1987,10 +1989,9 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
     of this box
 
           """
-          print "dnwlatlon at input: ", self.tpt.x, self.tpt.y, self.zoom
-          mlat, mlon = tilexy2nwmerclatlon(self.tpt.x, self.tpt.y, self.zoom)
-          print "dnwlatlon returning: ", merc2wgs(mlat, mlon)
-          return merc2wgs(mlat, mlon)
+          wlat, wlon = merc2wgs(*tilexy2nwmerclatlon(self.tpt.x, self.tpt.y, self.zoom))
+          print "dnwlatlon({0}, {1}, {2}) --> ".format(self.tpt.x, self.tpt.y, self.zoom), "==> ", (wlat, wlon)
+          return (wlat, wlon)
 
       def dselatlon(self):
           """return the lat/lon coordinates, in *data* space, of the se corner of
@@ -1999,8 +2000,9 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
           """
           se = self.tpt+(self.wit, self.hit) # tile just se of our se
           # (its nw == our se) XXX
-          mlat, mlon = tilexy2nwmerclatlon(se.x, se.y, self.zoom)
-          return merc2wgs(mlat, mlon)
+          wlat, wlon = merc2wgs(*tilexy2nwmerclatlon(se.x, se.y, self.zoom))
+          print "dselatlon({0}, {1}, {2}) --> ".format(se.x, se.y, self.zoom), "==> ", (wlat, wlon)
+          return wlat, wlon
 
 
 
@@ -2027,7 +2029,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
 
           tcenter = TilePoint(*TileBbox.deg2tilexy(lat, lon, zoom), zoom=zoom)
           # print "tcenter ", tcenter
-          # print "deg2tilexy(lat, lon, zoom)", lat, lon, zoom, " ==> tcenterx, tcentery", tcenterx, tcentery
+          print "deg2tilexy(lat, lon, zoom)", lat, lon, zoom, " ==> tcenter, ", tcenter
 
           # so, tcenterx,tcentery is tile coordinates of the center of the map.  now get
           # the height of the screen in tiles.  (in case you're wondering,
@@ -2099,7 +2101,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
 
      # get bounding box and zoom
      tbox = TileBbox(lat, lon, zoom) # XXX should pass shape bounding box to TileBbox
-     # print "tilebbox tpt, wit, hit, zoom: ", tbox.tpt, tbox.wit, tbox.hit, tbox.zoom
+     print "tilebbox tpt, wit, hit, zoom: ", tbox.tpt, tbox.wit, tbox.hit, tbox.zoom
 
      # PIL's Image.paste() seems to be what we want for laying out our
      # images: http://pillow.readthedocs.io/en/latest/reference/Image.html
@@ -2714,3 +2716,22 @@ indices in {1, 3}, i don't know.  but, it's too dangerous.
 "tilexy2latlon" is fine.
 
 but, "latlon2tilexy" is dangerous, when we start near borders.
+
+#+name: computetilexy2latlon
+#+BEGIN_SRC python :results output verbatim :var tilex=5 :var tiley=12 :var zoom=5
+  def computetilexy2latlon(tilex, tiley, zoom):
+      <<slippymaps>>
+
+      LAT_SPAN = 2*85.0511
+      mlon = 180 - (tilex*(360/(2.0**zoom)))
+      mlat = (LAT_SPAN/2.0) - (tiley*(LAT_SPAN/(2.0**zoom)))
+
+      wlat, wlon = merc2wgs(mlat, mlon)
+
+      return wlat, wlon, mlat, mlon
+
+  print computetilexy2latlon(tilex, tiley, zoom)
+#+END_SRC
+
+#+RESULTS: computetilexy2latlon
+: (20.79088526894166, 123.75, 21.262775000000005, 123.75)
