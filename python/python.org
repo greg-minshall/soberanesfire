@@ -2306,7 +2306,7 @@ here, we try to get a PNG file, put it in the background, with the
       # as well as to saying "x, y"
       print "dnwlon, dnwlat, dselon, dselat: ", dnwlon, dnwlat, dselon, dselat
       print "xlim, ylim: ", pp.ax.get_xlim(), pp.ax.get_ylim()
-      pp.addimage(image, aspect=1.0, extent=[dnwlon, dselon, dselat, dnwlat])
+      pp.addimage(image, extent=[dnwlon, dselon, dselat, dnwlat])
       print "xlim, ylim: ", pp.ax.get_xlim(), pp.ax.get_ylim()
 
       pp.plot()
@@ -2764,3 +2764,15 @@ but, "latlon2tilexy" is dangerous, when we start near borders.
 
 #+RESULTS: computetilexy2latlon
 : (20.79088526894166, 123.75, 21.262775000000005, 123.75)
+
+** notes
+
+to run
+#+BEGIN_EXAMPLE
+./ppshpolymap -z5 -l Soberanes -f "Heat Perimeter" ~/work/gis/play/IR/20160829_Soberanes_IR/doc.kml
+#+END_EXAMPLE
+
+to run mapproxy
+#+BEGIN_EXAMPLE
+mapproxy-util serve-develop ./mapproxy.yaml
+#+END_EXAMPLE
