@@ -989,6 +989,7 @@ in other applications.
 
 #+BEGIN_SRC python :tangle ~/usr/lib/python/ggmlib.py
   <<shPolyJson>>
+  <<PpShape>>
   <<shPolyShape>>
   <<shPoly>>
   <<deg2xy>>
@@ -1000,6 +1001,7 @@ in other applications.
   <<tilepoint>>
   <<slippymaps>>
   <<deg2latlon>>
+  <<getmapimage>>
 
 #+END_SRC
 
@@ -1514,7 +1516,6 @@ okay, gnuplot info file (commands:plot:binary:keywords) talks about
           self.__add__(shape, defs)
 
       def addimage(self, image, **kwargs):
-          print "addimage, kwargs: ", kwargs
           self.ax.imshow(image, **kwargs)
 
       def plot(self, **kwargs):
@@ -1896,7 +1897,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
 
       wlatrad = math.radians(wlat)
       mlatrad = math.log(math.tan(wlatrad)+(1/math.cos(wlatrad)))
-      mlat = math.degrees(mlatrad)%360
+      mlat = math.degrees(mlatrad)%180
 
       return mlat, mlon
 
@@ -2010,7 +2011,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
 
           """
           wlat, wlon = merc2wgs(*tilexy2nwmerclatlon(self.tpt.x, self.tpt.y, self.zoom))
-          print "dnwlatlon({0}, {1}, {2}) --> ".format(self.tpt.x, self.tpt.y, self.zoom), "==> ", (wlat, wlon)
+          # print "dnwlatlon({0}, {1}, {2}) --> ".format(self.tpt.x, self.tpt.y, self.zoom), "==> ", (wlat, wlon)
           return (wlat, wlon)
 
       def dselatlon(self):
@@ -2021,7 +2022,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
           se = self.tpt+(self.wit, self.hit) # tile just se of our se
           # (its nw == our se) XXX
           wlat, wlon = merc2wgs(*tilexy2nwmerclatlon(se.x, se.y, self.zoom))
-          print "dselatlon({0}, {1}, {2}) --> ".format(se.x, se.y, self.zoom), "==> ", (wlat, wlon)
+          # print "dselatlon({0}, {1}, {2}) --> ".format(se.x, se.y, self.zoom), "==> ", (wlat, wlon)
           return wlat, wlon
 
 
@@ -2049,7 +2050,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
 
           tcenter = TilePoint(*TileBbox.deg2tilexy(lat, lon, zoom), zoom=zoom)
           # print "tcenter ", tcenter
-          print "deg2tilexy(lat, lon, zoom)", lat, lon, zoom, " ==> tcenter, ", tcenter
+          # print "deg2tilexy(lat, lon, zoom)", lat, lon, zoom, " ==> tcenter, ", tcenter
 
           # so, tcenterx,tcentery is tile coordinates of the center of the map.  now get
           # the height of the screen in tiles.  (in case you're wondering,
@@ -2103,7 +2104,7 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
 | tiley   |  256 | pixels? |
 
 #+name: getmapimage
-#+BEGIN_SRC python :results output verbatim :var lat=36.4 :var lon=-121.858 :var zoom=5 :var parms=parameters :var mapurl=MAPURL
+#+BEGIN_SRC python :results output verbatim :var lat=36.4 :var lon=-121.858 :var zoom=5
   def getmapimage(lat, lon, zoom):
      """return a map that more-or-less centers LAT/LON at a particular ZOOM
   level.  also returns the bounding box (nw, se coordinates) of the
@@ -2115,9 +2116,6 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
      import urllib2
 
      <<tilebbox>>
-     p = {}
-     for i in parms:
-        p[i[0]] = i[1]
 
      # get bounding box and zoom
      tbox = TileBbox(lat, lon, zoom) # XXX should pass shape bounding box to TileBbox
@@ -2147,10 +2145,14 @@ from [[http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames][Slippy map tilen
         # wrap it in a BytesIO object, and use open() to load it.
         bio = io.BytesIO(data)
         im2 = PIL.Image.open(bio)
+        # print "before, im.getbbox(): ", im.getbbox()
+        # print "before, im2.getbbox(): ", im2.getbbox()
         # now, paste this in the right place on the big image
         im.paste(im2, box=(xoff*p['tilex'], yoff*p['tiley']))
+        # print "after paste, im.getbbox(): ", im.getbbox()
+        # print "after paste, im2.getbbox(): ", im2.getbbox()
 
-     # print "tbox.dnwlatlon, dselatlon: ", tbox.dnwlatlon(), tbox.dselatlon()
+     print "tbox.dnwlatlon, dselatlon: ", tbox.dnwlatlon(), tbox.dselatlon()
      return (im, tbox.dnwlatlon(), tbox.dselatlon())
 #+END_SRC
 
@@ -2263,6 +2265,7 @@ here, we try to get a PNG file, put it in the background, with the
   def main(argv):
       import os, sys
       import argparse
+      global p
 
       cmd = argv[0]
       parser = argparse.ArgumentParser(description="""display a geometry over a map.
@@ -2280,6 +2283,10 @@ here, we try to get a PNG file, put it in the background, with the
       # get shape from extractshape()
       shape = extractshape(args.filename[0], args.layername, args.featurename)
 
+      p = {}
+      for i in parms:
+          p[i[0]] = i[1]
+
       # get centroid from shape
       (lat, lon) = (shape.centroid.y, shape.centroid.x)
 
@@ -2292,6 +2299,8 @@ here, we try to get a PNG file, put it in the background, with the
       print "xlim, ylim: ", pp.ax.get_xlim(), pp.ax.get_ylim()
       pp.add(shape)
       print "xlim, ylim: ", pp.ax.get_xlim(), pp.ax.get_ylim()
+      print "transData: ", pp.ax.transData
+      print "transAxes: ", pp.ax.transAxes
 
       # problem: lat == y, lon == x, yet we're used to saying "lat/lon",
       # as well as to saying "x, y"
