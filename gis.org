@@ -284,3 +284,10 @@ off by as much as 100 meters (at some locations, presumably).
 KML's lat/lon's are WGS84.  and, [[https://en.wikipedia.org/wiki/Keyhole_Markup_Language][the KML Wikipedia page]] confirms that.)
 
 [[http://epsg.io/4326][epsg.4326]]: "WGS 84 -- WGS84 - World Geodetic System 1984, used in GPS"
+
+geofabrik has a [[http://tools.geofabrik.de/map/#2/-71.5688/15.4814&type=Geofabrik_Standard&grid=1][nice page]] showing tiles and coordinates.  in fact, y=0
+implies 85.0511.
+
+[[https://en.wikipedia.org/wiki/Web_Mercator][Web Mercator]] is in here, also.
+
+[[http://www.maplesoft.com/applications/view.aspx?SID=4892&view=html][dynamics on a sphere]] (Maplesoft)
