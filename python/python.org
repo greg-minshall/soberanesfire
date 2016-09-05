@@ -1749,7 +1749,17 @@ then, given a set of coordinates, that we want in the center of the
 screen, and a zoom level, figure out the list of tiles we need to
 request.
 
-**** TilePoint -- an experiment in progress
+**** TilePoint
+
+so, we create a class of tilepoints, i.e., points on a tile.
+
+how should these behave arithmetically when an attempt is made to
+generate a negative number?  as originally written, the tiles would
+"wrap" around.  and, this is fine for *longitude*.  however, for
+latitude, it's not clear what the right semantics would be.  options
+seem to be: wrap; stuck at top (or bottom); expand tbbox to take in
+entire longitudinal hemisphere (though we're not really structured for
+that).
 
 #+name: tilepoint
 #+BEGIN_SRC python
@@ -1768,6 +1778,7 @@ request.
           self.x = x
           self.y = y
           self.zoom = zoom
+          self.__latwrap__ = 'stuck'        # vs. 'wraps' or 'expand'
           self.powzoom = 2**zoom  # for efficiency
           self.halves = self.powzoom/2 # ditto
           self.doubles = self.powzoom*2 # ditto
@@ -1782,11 +1793,11 @@ request.
 
       def __add__(self, ij):
           i,j = ij
-          # print "i,j ", i, j
+          # print "__add__ entry i,j ", i, j
           # later, we'll want to know if y and y+j are on the same side
           # (mod 2) of the world; we're going to mess with j below, so
-          # save the answer
-          ysameside = self.__sameside__(self.y, self.y+j)
+          # save the original j
+          orig_j = j
           rval = TilePoint(self.x, self.y, self.zoom)
           # print "rval(1) ", rval
           # so, we're going to do this very slowly
@@ -1797,11 +1808,10 @@ request.
               j = rval.powzoom+j  # ditto
 
 
-
           # okay, at most once (-1) around the world
           i = i % rval.powzoom
           j = j % rval.doubles    # here, we might go a bit further
-          # print "(i,j)", (i,j)
+          # print "later (i,j): ", (i,j)
 
           rval.x += i             # longitude trivial (we do modulus
                                   # reduction towards end of function,
@@ -1814,17 +1824,27 @@ request.
           # (4,3).  and, on *that* side, we are *subtracting* in the y
           # coordinate when we are adding from *this* side.  detect
           # this.
-          if ysameside:
+          if self.__sameside__(self.y, self.y+orig_j):
               rval.y += j         # easy case, on same side, just add
               # print "rval(4) ", rval
           else:
-              rval.x += rval.halves    # other side of world
-              # next, get to the first tile beyond S pole ...
-              j -= (rval.powzoom-rval.y)
-              rval.y = rval.powzoom-1; # .. a tile called this
-              rval.y -= j         # then, "advance backwards" the rest
-              # print "rval(5) ", rval
-                                  # of our journey
+              if self.__latwrap__ == 'stuck':
+                  if j < 0:       # subtracting: stick at zero
+                      rval.y = 0
+                  else:
+                      rval.y = self.powzoom-1 # adding: stick at max
+              elif self.__latwrap__ == 'wraps':
+                  rval.x += rval.halves    # other side of world
+                  # next, get to the first tile beyond S pole ...
+                  j -= (rval.powzoom-rval.y)
+                  rval.y = rval.powzoom-1; # .. a tile called this
+                  rval.y -= j         # then, "advance backwards" the rest
+                  # print "rval(5) ", rval
+                                      # of our journey
+              else:
+                  raise ValueError("TilePoint __latwrap__ has bad value '{0}'".format(self.__latwraps__))
+        
+        
           # now, make sure we're in bounds
           # print "rval ", rval
           rval.y %= rval.powzoom
